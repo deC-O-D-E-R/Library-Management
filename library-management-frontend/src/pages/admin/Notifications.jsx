@@ -59,11 +59,11 @@ const AdminNotifications = () => {
 
     const getTypeColor = (type) => {
         switch (type) {
-            case 'due_reminder': return 'text-warning bg-amber-900 bg-opacity-30';
-            case 'overdue': return 'text-danger bg-red-900 bg-opacity-30';
-            case 'issued': return 'text-success bg-green-900 bg-opacity-30';
-            case 'returned': return 'text-blue-400 bg-blue-900 bg-opacity-30';
-            case 'fine': return 'text-orange-400 bg-orange-900 bg-opacity-30';
+            case 'due_reminder': return 'text-warning bg-black/10';
+            case 'overdue': return 'text-danger bg-red-500/10';
+            case 'issued': return 'text-success bg-green-500/10';
+            case 'returned': return 'text-blue-400 bg-blue-500/10';
+            case 'fine': return 'text-orange-400 bg-orange-500/10';
             default: return 'text-text-secondary bg-surface';
         }
     };
@@ -79,9 +79,11 @@ const AdminNotifications = () => {
                 </span>
             )
         },
-        { header: 'Message', render: (row) => (
-            <span className="text-text-secondary text-xs line-clamp-2">{row.message}</span>
-        )},
+        {
+            header: 'Message', render: (row) => (
+                <span className="text-text-secondary text-xs line-clamp-2">{row.message}</span>
+            )
+        },
         {
             header: 'Sent',
             render: (row) => (
@@ -90,9 +92,11 @@ const AdminNotifications = () => {
                 </span>
             )
         },
-        { header: 'Sent At', render: (row) => (
-            <span className="text-text-secondary text-xs">{formatDateTime(row.sentAt)}</span>
-        )},
+        {
+            header: 'Sent At', render: (row) => (
+                <span className="text-text-secondary text-xs">{formatDateTime(row.sentAt)}</span>
+            )
+        },
     ];
 
     if (loading) return <Layout><Loader /></Layout>;
@@ -115,8 +119,8 @@ const AdminNotifications = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="bg-surface border border-border rounded-xl p-5 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-amber-900 bg-opacity-50 rounded-lg flex items-center justify-center">
-                                <Bell size={18} className="text-warning" />
+                            <div className="w-10 h-10 bg-opacity-50 rounded-lg flex items-center justify-center">
+                                <Bell size={20} className="text-warning" />
                             </div>
                             <div>
                                 <p className="text-text-primary font-semibold text-sm">Due Reminders</p>
@@ -137,8 +141,8 @@ const AdminNotifications = () => {
 
                     <div className="bg-surface border border-border rounded-xl p-5 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-red-900 bg-opacity-50 rounded-lg flex items-center justify-center">
-                                <AlertTriangle size={18} className="text-danger" />
+                            <div className="w-10 h-10 bg-opacity-50 rounded-lg flex items-center justify-center">
+                                <AlertTriangle size={20} className="text-danger" />
                             </div>
                             <div>
                                 <p className="text-text-primary font-semibold text-sm">Overdue Alerts</p>
@@ -148,10 +152,10 @@ const AdminNotifications = () => {
                             </div>
                         </div>
                         <Button
-                            variant="danger"
                             onClick={handleTriggerOverdue}
                             disabled={triggering === 'overdue'}
                             size="sm"
+                            className="bg-red-600 hover:bg-red-400 text-white"
                         >
                             <AlertTriangle size={14} />
                             {triggering === 'overdue' ? 'Processing...' : 'Trigger'}
