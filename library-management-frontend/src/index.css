@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #0D1F0F;
+  color: #F8FAFC;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #081408;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #F59E0B;
+  border-radius: 3px;
+}
+
+/* Default = LIGHT */
+:root {
+  --color-primary: #FFFDF9;
+  --color-sidebar: #FFF7ED;
+  --color-surface: #FFFFFF;
+  --color-border: #FDE7CF;
+  --color-accent: #F97316;
+  --color-text-primary: #1C1917;
+  --color-text-secondary: #78716C;
+  --color-success: #10B981;
+  --color-danger: #F43F5E;
+  --color-warning: #F59E0B;
+}
+
+/* DARK THEME */
+[data-theme="dark"] {
+  --color-primary: #0A1A0C;
+  --color-sidebar: #060F07;
+  --color-surface: #122114;
+  --color-border: #1E3D20;
+  --color-accent: #E8A020;
+  --color-text-primary: #EEF2EE;
+  --color-text-secondary: #6A9B6E;
+  --color-success: #4CAF72;
+  --color-danger: #E05A5A;
+  --color-warning: #E8A020;
+}
