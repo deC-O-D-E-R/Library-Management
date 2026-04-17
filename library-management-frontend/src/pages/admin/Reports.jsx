@@ -8,7 +8,8 @@ import Badge from '../../components/ui/Badge';
 import Loader from '../../components/ui/Loader';
 import {
     getCirculationReport, getUserBorrowingReport, getInventoryReport,
-    getHoldingSummary, getOverdueReport, getStockVerificationReport
+    getHoldingSummary, getOverdueReport, getStockVerificationReport,
+    searchUserByStaffNumber
 } from '../../api/adminApi';
 import { formatDate, formatCurrency } from '../../utils/helpers';
 
@@ -36,7 +37,10 @@ const AdminReports = () => {
             let res;
             switch (activeTab) {
                 case 'circulation': res = await getCirculationReport(statusFilter); break;
-                case 'user': res = await getUserBorrowingReport(userIdInput); break;
+                case 'user':
+                    const userRes = await searchUserByStaffNumber(userIdInput);
+                    res = await getUserBorrowingReport(userRes.data.userId);
+                    break;
                 case 'inventory': res = await getInventoryReport(); break;
                 case 'holding': res = await getHoldingSummary(); break;
                 case 'overdue': res = await getOverdueReport(); break;
@@ -145,13 +149,13 @@ const AdminReports = () => {
                         {activeTab === 'user' && (
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-text-secondary text-xs font-semibold uppercase tracking-wider">
-                                    User ID
+                                    Staff Number
                                 </label>
                                 <input
-                                    type="number"
+                                    type="text"
                                     value={userIdInput}
                                     onChange={(e) => setUserIdInput(e.target.value)}
-                                    placeholder="Enter user ID"
+                                    placeholder="Enter Staff No."
                                     className="bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent placeholder:text-text-secondary"
                                 />
                             </div>
@@ -251,9 +255,10 @@ const AdminReports = () => {
                                         { header: 'Call No.', key: 'callNumber' },
                                         { header: 'Previous Status', render: (row) => <Badge text={row.previousStatus} /> },
                                         { header: 'Marked Status', render: (row) => <Badge text={row.markedStatus} /> },
-                                        { header: 'Changed', render: (row) => row.statusChanged
-                                            ? <span className="text-danger text-xs font-semibold">Yes</span>
-                                            : <span className="text-success text-xs">No</span>
+                                        {
+                                            header: 'Changed', render: (row) => row.statusChanged
+                                                ? <span className="text-danger text-xs font-semibold">Yes</span>
+                                                : <span className="text-success text-xs">No</span>
                                         },
                                     ]}
                                     data={data.details || []}
