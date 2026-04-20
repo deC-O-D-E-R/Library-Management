@@ -25,6 +25,7 @@ import SearchBooks from './pages/employee/SearchBooks';
 import MyBooks from './pages/employee/MyBooks';
 import MyReservations from './pages/employee/MyReservations';
 import MyFines from './pages/employee/MyFines';
+import BookRequestForm from './pages/employee/BookRequestForm';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
     const { user, token } = useAuth();
@@ -79,6 +80,7 @@ const AppRoutes = () => {
             <Route path="/employee/my-books" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN', 'EMPLOYEE']}><MyBooks /></ProtectedRoute>} />
             <Route path="/employee/reservations" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN', 'EMPLOYEE']}><MyReservations /></ProtectedRoute>} />
             <Route path="/employee/my-fines" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN', 'EMPLOYEE']}><MyFines /></ProtectedRoute>} />
+            <Route path="/employee/book-request" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN', 'EMPLOYEE']}><BookRequestForm /></ProtectedRoute>} />
 
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="*" element={<Navigate to="/login" replace />} />

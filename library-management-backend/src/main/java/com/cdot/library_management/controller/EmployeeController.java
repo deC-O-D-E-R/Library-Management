@@ -33,6 +33,17 @@ public class EmployeeController {
         this.userRepository = userRepository;
     }
 
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyDetails() {
+        try {
+            User user = getLoggedInUser();
+            return ResponseEntity.ok(user);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @GetMapping("/books/search")
     public ResponseEntity<List<BookResponseDTO>> searchBooks(
             @RequestParam(required = false) String title,

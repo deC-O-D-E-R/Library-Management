@@ -1,5 +1,9 @@
 import axiosInstance from './axios';
 
+//fetch logged user
+export const getMyDetails = () =>
+    axiosInstance.get('/employee/me');
+
 //books (emoloyees)
 export const searchBooks = (params) =>
     axiosInstance.get('/employee/books/search', { params });

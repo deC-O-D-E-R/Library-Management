@@ -7,7 +7,7 @@ import Table from '../../components/ui/Table';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Loader from '../../components/ui/Loader';
-import { getMyBooks, getMyFines } from '../../api/userApi';
+import { getMyBooks, getMyFines, getMyDetails } from '../../api/userApi';
 import { formatDate, formatCurrency } from '../../utils/helpers';
 import useAuth from '../../hooks/useAuth';
 
@@ -28,6 +28,7 @@ const StatCard = ({ icon: Icon, label, value, color, onClick }) => (
 
 const EmployeeDashboard = () => {
     const { user } = useAuth();
+    const [myDetails, setMyDetails] = useState(null);
     const navigate = useNavigate();
     const [myBooks, setMyBooks] = useState([]);
     const [myFines, setMyFines] = useState([]);
@@ -36,12 +37,14 @@ const EmployeeDashboard = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [booksRes, finesRes] = await Promise.all([
+                const [booksRes, finesRes, detailsRes] = await Promise.all([
                     getMyBooks(),
                     getMyFines(),
+                    getMyDetails(), ,
                 ]);
                 setMyBooks(booksRes.data);
                 setMyFines(finesRes.data);
+                setMyDetails(detailsRes.data);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -87,13 +90,17 @@ const EmployeeDashboard = () => {
 
                 {/* Welcome */}
                 <div className="bg-surface border border-border rounded-xl p-6 flex items-center justify-between">
-                    <div>
-                        <h1 className="text-text-primary text-2xl font-bold">
-                            Welcome, {user?.name?.split(' ')[0]} 👋
-                        </h1>
-                        <p className="text-text-secondary text-sm mt-1">
-                            {user?.staffNumber} — {user?.roles?.join(', ')}
-                        </p>
+                    <div className="flex items-center gap-4">
+                        <div>
+                            <h1 className="text-text-primary text-2xl font-bold">
+                                Welcome, {user?.name?.split(' ')[0]} 👋
+                            </h1>
+                            <p className="text-text-secondary text-sm mt-0.5">
+                                {myDetails?.designation}
+                                <span className="mx-2 text-border">|</span>
+                                {user?.staffNumber}
+                            </p>
+                        </div>
                     </div>
                     <Button onClick={() => navigate('/employee/search')}>
                         <Search size={15} /> Search Books

@@ -3,7 +3,8 @@ import useAuth from '../../hooks/useAuth';
 import {
     LayoutDashboard, Users, BookOpen, Tag, BarChart3,
     Bell, Settings, BookCheck, RotateCcw, List,
-    Banknote, PackageSearch, Search, BookMarked, Receipt, BookmarkCheck
+    Banknote, PackageSearch, Search, BookMarked, Receipt, 
+    BookmarkCheck, FileDown
 } from 'lucide-react';
 
 const NavItem = ({ to, icon: Icon, label }) => (
@@ -57,6 +58,7 @@ const Sidebar = () => {
         { to: '/employee/my-books', icon: BookMarked, label: 'My Books' },
         { to: '/employee/reservations', icon: BookmarkCheck, label: 'My Reservations' },
         { to: '/employee/my-fines', icon: Receipt, label: 'My Fines' },
+        { to: '/employee/book-request', icon: FileDown, label: 'Book Request Form'},
     ];
 
     return (
