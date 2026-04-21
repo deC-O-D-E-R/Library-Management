@@ -39,6 +39,15 @@ public class CirculationController {
         return ResponseEntity.ok(bookService.getAllBooks());
     }
 
+    @GetMapping("/books/{bookId}")
+    public ResponseEntity<?> getBookById(@PathVariable Integer bookId) {
+        try {
+            return ResponseEntity.ok(bookService.getBookById(bookId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @PostMapping("/issue")
     public ResponseEntity<?> issueBook(@RequestBody CirculationRequestDTO request) {
         try {

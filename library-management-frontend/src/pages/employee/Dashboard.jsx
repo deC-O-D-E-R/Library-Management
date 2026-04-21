@@ -40,7 +40,7 @@ const EmployeeDashboard = () => {
                 const [booksRes, finesRes, detailsRes] = await Promise.all([
                     getMyBooks(),
                     getMyFines(),
-                    getMyDetails(), ,
+                    getMyDetails(),
                 ]);
                 setMyBooks(booksRes.data);
                 setMyFines(finesRes.data);

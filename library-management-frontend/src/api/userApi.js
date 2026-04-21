@@ -33,6 +33,9 @@ export const getMyReservations = () =>
     axiosInstance.get('/employee/reservations/my');
 
 //circulation (librarian)
+export const getLibrarianBookById = (bookId) =>
+    axiosInstance.get(`/librarian/circulation/books/${bookId}`);
+
 export const getAllCirculations = () =>
     axiosInstance.get('/librarian/circulation');
 
