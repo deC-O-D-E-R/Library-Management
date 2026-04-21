@@ -57,12 +57,12 @@ public class NotificationService {
             notification.setIsSent(false);
 
             if (emailService != null) {
-                // emailService.sendDueReminderEmail(
-                //         circulation.getUser().getEmail(),
-                //         circulation.getUser().getName(),
-                //         circulation.getBookCopy().getBook().getTitle(),
-                //         circulation.getDueDate().toString()
-                // );
+                emailService.sendDueReminderEmail(
+                        circulation.getUser().getEmail(),
+                        circulation.getUser().getName(),
+                        circulation.getBookCopy().getBook().getTitle(),
+                        circulation.getDueDate().toString()
+                );
                 notification.setIsSent(true);
                 notification.setSentAt(LocalDateTime.now());
             }
@@ -103,14 +103,14 @@ public class NotificationService {
             notification.setIsSent(false);
 
             if (emailService != null) {
-                // emailService.sendOverdueEmail(
-                //         circulation.getUser().getEmail(),
-                //         circulation.getUser().getName(),
-                //         circulation.getBookCopy().getBook().getTitle(),
-                //         circulation.getDueDate().toString(),
-                //         daysOverdue,
-                //         estimatedFine
-                // );
+                emailService.sendOverdueEmail(
+                        circulation.getUser().getEmail(),
+                        circulation.getUser().getName(),
+                        circulation.getBookCopy().getBook().getTitle(),
+                        circulation.getDueDate().toString(),
+                        daysOverdue,
+                        estimatedFine
+                );
                 notification.setIsSent(true);
                 notification.setSentAt(LocalDateTime.now());
             }

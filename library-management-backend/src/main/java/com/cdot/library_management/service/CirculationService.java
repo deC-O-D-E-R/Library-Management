@@ -94,15 +94,15 @@ public class CirculationService {
         copy.setStatus("issued");
         bookCopyRepository.save(copy);
 
-    // if (emailService != null){
-    //     emailService.sendBookIssuedEmail(
-    //             user.getEmail(),
-    //             user.getName(),
-    //             copy.getBook().getTitle(),
-    //             copy.getAccessionNumber(),
-    //             dueDate.toString()
-    //     );
-    // }
+    if (emailService != null){
+        emailService.sendBookIssuedEmail(
+                user.getEmail(),
+                user.getName(),
+                copy.getBook().getTitle(),
+                copy.getAccessionNumber(),
+                dueDate.toString()
+        );
+    }
         return mapToResponseDTO(savedCirculation);
     }
 
@@ -125,6 +125,10 @@ public class CirculationService {
         copy.setStatus("available");
         bookCopyRepository.save(copy);
 
+        reservationService.notifyReservedUsers(
+            circulation.getBookCopy().getBook().getBookId()
+        );
+
         if (returnDate.isAfter(circulation.getDueDate())) {
             long daysOverdue = returnDate.toEpochDay() - circulation.getDueDate().toEpochDay();
             double finePerDay = systemConfigService.getFinePerDay();
@@ -136,30 +140,27 @@ public class CirculationService {
             fine.setStatus("pending");
             fineRepository.save(fine);
 
-            reservationService.notifyReservedUsers(
-                circulation.getBookCopy().getBook().getBookId()
-            );
 
-            // if (emailService != null){
-            //     emailService.sendFineEmail(
-            //         circulation.getUser().getEmail(),
-            //         circulation.getUser().getName(),
-            //         copy.getBook().getTitle(),
-            //         fineAmount
-            //     );
-            // }
+            if (emailService != null){
+                emailService.sendFineEmail(
+                    circulation.getUser().getEmail(),
+                    circulation.getUser().getName(),
+                    copy.getBook().getTitle(),
+                    fineAmount
+                );
+            }
         }
 
         Circulation savedCirculation = circulationRepository.save(circulation);
 
-        // if (emailService != null){
-        //     emailService.sendBookReturnedEmail(
-        //         circulation.getUser().getEmail(),
-        //         circulation.getUser().getName(),
-        //         copy.getBook().getTitle(),
-        //         returnDate.toString()
-        //     );
-        // }
+        if (emailService != null){
+            emailService.sendBookReturnedEmail(
+                circulation.getUser().getEmail(),
+                circulation.getUser().getName(),
+                copy.getBook().getTitle(),
+                returnDate.toString()
+            );
+        }
         return mapToResponseDTO(savedCirculation);
     }
 

@@ -88,9 +88,20 @@ public class EmailService {
         sendEmail(toEmail, subject, body);
     }
 
+    public void sendReturnReminderEmail(String toEmail, String userName, String bookTitle) {
+        String subject = "Return Request - CDOT Library";
+        String body = "Dear " + userName + ",\n\n"
+                + "We would like to inform you that another member has placed a reservation for the following book:\n"
+                + "Title: " + bookTitle + "\n\n"
+                + "We kindly request you to return the book at your earliest convenience.\n\n"
+                + "Regards,\nCDOT Library";
+        sendEmail(toEmail, subject, body);
+    }
+
     private void sendEmail(String toEmail, String subject, String body) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("cdot.interns@cdot.in");
             message.setTo(toEmail);
             message.setSubject(subject);
             message.setText(body);

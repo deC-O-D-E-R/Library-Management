@@ -8,6 +8,7 @@ import com.cdot.library_management.repository.BookCopyRepository;
 import com.cdot.library_management.repository.BookRepository;
 import com.cdot.library_management.repository.ReservationRepository;
 import com.cdot.library_management.repository.UserRepository;
+import com.cdot.library_management.repository.CirculationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -25,16 +26,19 @@ public class ReservationService {
     private final BookCopyRepository bookCopyRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final CirculationRepository circulationRepository;
 
     public ReservationService(ReservationRepository reservationRepository,
                                BookRepository bookRepository,
                                BookCopyRepository bookCopyRepository,
                                UserRepository userRepository,
+                               CirculationRepository circulationRepository,
                                @Autowired(required = false) EmailService emailService) {
         this.reservationRepository = reservationRepository;
         this.bookRepository = bookRepository;
         this.bookCopyRepository = bookCopyRepository;
         this.userRepository = userRepository;
+        this.circulationRepository = circulationRepository;
         this.emailService = emailService;
     }
 
@@ -66,6 +70,15 @@ public class ReservationService {
         reservation.setStatus("pending");
 
         Reservation saved = reservationRepository.save(reservation);
+        if (emailService != null) {
+        circulationRepository.findActiveByBookId(bookId)
+                .forEach(c -> emailService.sendReturnReminderEmail(
+                c.getUser().getEmail(),
+                c.getUser().getName(),
+                book.getTitle()
+                ));
+        }
+
         return mapToResponseDTO(saved);
     }
 
@@ -137,13 +150,13 @@ public class ReservationService {
         first.setNotifiedAt(LocalDateTime.now());
         reservationRepository.save(first);
 
-        // if (emailService != null) {
-        //     emailService.sendReservationAvailableEmail(
-        //             first.getUser().getEmail(),
-        //             first.getUser().getName(),
-        //             first.getBook().getTitle()
-        //     );
-        // }
+        if (emailService != null) {
+            emailService.sendReservationAvailableEmail(
+                    first.getUser().getEmail(),
+                    first.getUser().getName(),
+                    first.getBook().getTitle()
+            );
+        }
     }
 
     //pending resevation -> fulfilled
