@@ -6,7 +6,7 @@ import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Loader from '../../components/ui/Loader';
 import { issueBook } from '../../api/userApi';
-import { getAllUsers, getAllBooks } from '../../api/userApi';
+import { getAllUsers, getAllBooks, getReservationsByBook } from '../../api/userApi';
 import { formatDate } from '../../utils/helpers';
 
 const IssueBook = () => {
@@ -21,6 +21,8 @@ const IssueBook = () => {
     const [bookSearch, setBookSearch] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
     const [selectedCopy, setSelectedCopy] = useState(null);
+
+    const [reservationWarning, setReservationWarning] = useState(null);
 
     const [form, setForm] = useState({
         issueDate: new Date().toISOString().split('T')[0],
@@ -59,6 +61,25 @@ const IssueBook = () => {
             b.callNumber.toLowerCase().includes(bookSearch.toLowerCase())
         )
     );
+
+    const handleSelectCopy = async (copy, book) => {
+        setSelectedCopy({ ...copy, bookTitle: book.title });
+        setReservationWarning(null);
+        try {
+            const res = await getReservationsByBook(book.bookId);
+            const pending = res.data;
+            if (pending.length > 0) {
+                const isForSelectedUser = selectedUser && pending.some(r => r.userId === selectedUser.userId);
+                if (!isForSelectedUser) {
+                    setReservationWarning(
+                        `⚠️ This book has ${pending.length} pending reservation(s). Next in queue: ${pending[0].userName} (${pending[0].staffNumber})`
+                    );
+                }
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     const handleSubmit = async () => {
         if (!selectedUser || !selectedCopy) {
@@ -178,7 +199,7 @@ const IssueBook = () => {
                                             {book.copies?.filter(c => c.status === 'available').map((copy) => (
                                                 <button
                                                     key={copy.copyId}
-                                                    onClick={() => setSelectedCopy({ ...copy, bookTitle: book.title })}
+                                                    onClick={() => handleSelectCopy(copy, book)}
                                                     className={`flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors
                                                         ${selectedCopy?.copyId === copy.copyId
                                                             ? 'bg-accent text-primary'
@@ -249,6 +270,12 @@ const IssueBook = () => {
                                 />
                             </div>
                         </div>
+
+                        {reservationWarning && (
+                            <div className="bg-yellow-900 bg-opacity-30 border border-warning rounded-lg px-4 py-3">
+                                <p className="text-warning text-sm">{reservationWarning}</p>
+                            </div>
+                        )}
 
                         {error && (
                             <div className="bg-red-900 bg-opacity-30 border border-danger rounded-lg px-4 py-3">

@@ -107,3 +107,6 @@ export const getPendingReservations = () =>
 
 export const fulfillReservation = (reservationId) =>
     axiosInstance.patch(`/librarian/reservations/${reservationId}/fulfill`);
+
+export const getReservationsByBook = (bookId) =>
+    axiosInstance.get(`/librarian/reservations/book/${bookId}`);

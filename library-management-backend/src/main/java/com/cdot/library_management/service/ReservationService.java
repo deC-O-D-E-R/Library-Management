@@ -136,6 +136,14 @@ public class ReservationService {
                 .collect(Collectors.toList());
     }
 
+    //find reserved books
+    public List<ReservationResponseDTO> getReservationsByBook(Integer bookId) {
+        return reservationRepository.findByBook_BookIdAndStatusIn(bookId, List.of("pending", "notified"))
+                .stream()
+                .map(this::mapToResponseDTO)
+                .collect(Collectors.toList());
+        }
+
     //notify user when a look they reserved is available
     @Transactional
     public void notifyReservedUsers(Integer bookId) {

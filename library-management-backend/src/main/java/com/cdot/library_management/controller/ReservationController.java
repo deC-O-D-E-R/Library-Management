@@ -66,4 +66,10 @@ public class ReservationController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    //get reserse books
+    @GetMapping("/librarian/reservations/book/{bookId}")
+    public ResponseEntity<List<ReservationResponseDTO>> getReservationsByBook(@PathVariable Integer bookId) {
+        return ResponseEntity.ok(reservationService.getReservationsByBook(bookId));
+    }
 }
