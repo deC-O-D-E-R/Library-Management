@@ -2,6 +2,7 @@ package com.cdot.library_management.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "stock_verification")
@@ -31,12 +32,14 @@ public class StockVerification {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
+    @OneToMany(mappedBy = "stockVerification", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<VerificationAssignment> assignments;
+
     @PrePersist
     protected void onCreate() {
         startedAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
     public Integer getVerificationId() { return verificationId; }
     public void setVerificationId(Integer verificationId) { this.verificationId = verificationId; }
 
@@ -57,4 +60,7 @@ public class StockVerification {
 
     public LocalDateTime getCompletedAt() { return completedAt; }
     public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
+
+    public List<VerificationAssignment> getAssignments() { return assignments; }
+    public void setAssignments(List<VerificationAssignment> assignments) { this.assignments = assignments; }
 }

@@ -36,6 +36,9 @@ export const getMyReservations = () =>
 export const getLibrarianBookById = (bookId) =>
     axiosInstance.get(`/librarian/circulation/books/${bookId}`);
 
+export const getAllCategories = () =>
+    axiosInstance.get('/librarian/circulation/categories');
+
 export const getAllCirculations = () =>
     axiosInstance.get('/librarian/circulation');
 
@@ -100,6 +103,15 @@ export const completeVerification = (verificationId) =>
 
 export const getDiscrepancyReport = (verificationId) =>
     axiosInstance.get(`/librarian/stock/${verificationId}/discrepancy`);
+
+export const getVerificationUsers = () =>
+    axiosInstance.get('/librarian/stock/users');
+
+export const getVerificationAssignments = (verificationId) =>
+    axiosInstance.get(`/librarian/stock/${verificationId}/assignments`);
+
+export const getPrintSheetData = (verificationId, assignmentId) =>
+    axiosInstance.get(`/librarian/stock/${verificationId}/print/${assignmentId}`);
 
 // reservations (librarian)
 export const getAllReservations = () =>

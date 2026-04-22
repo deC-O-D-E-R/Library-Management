@@ -31,6 +31,7 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    //user login
     public LoginResponse login(LoginRequest request) {
 
         User user = userRepository.findByStaffNumber(request.getStaffNumber())

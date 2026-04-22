@@ -39,6 +39,11 @@ public class BookService {
         this.categoryRepository = categoryRepository;
     }
 
+    //get all categories
+    public List<Category> getAllCategories() {
+        return categoryRepository.findAll();
+    }
+
     //add single book with copies
     @Transactional
     public BookResponseDTO addBook(BookRequestDTO request) {

@@ -133,28 +133,45 @@ const AdminReports = () => {
 
         const d = filteredData;
 
-        const configs = {
-            circulation: {
-                subtitle: `Status: ${statusFilter || 'All'} | Period: ${monthLabel} | Records: ${d.length}`,
-                head: [['Book', 'Borrower', 'Staff No.', 'Issue Date', 'Due Date', 'Return Date', 'Status']],
-                body: d.map(r => [r.bookTitle, r.userName, r.staffNumber, fmt(r.issueDate), fmt(r.dueDate), fmt(r.returnDate), r.status]),
-            },
-            inventory: {
-                subtitle: `Total Books: ${d.length}`,
-                head: [['Title', 'Author', 'Category', 'Call No.', 'Total', 'Available', 'Issued', 'Missing']],
-                body: d.map(r => [r.title, r.author, r.categoryName, r.callNumber, r.totalCopies, r.availableCopies, r.issuedCopies, r.missingDamagedCopies]),
-            },
-            holding: {
-                subtitle: `Categories: ${d.length}`,
-                head: [['Category', 'Total Books', 'Total Copies', 'Available', 'Issued', 'Missing/Damaged']],
-                body: d.map(r => [r.categoryName, r.totalBooks, r.totalCopies, r.available, r.issued, r.missingDamaged]),
-            },
-            overdue: {
-                subtitle: `Period: ${monthLabel} | Total Overdue: ${d.length}`,
-                head: [['Book', 'Staff No.', 'Borrower', 'Email', 'Due Date', 'Days Overdue', 'Est. Fine']],
-                body: d.map(r => [r.bookTitle, r.staffNumber, r.userName, r.email, fmt(r.dueDate), r.daysOverdue, `₹${parseFloat(r.estimatedFine).toFixed(2)}`]),
-            },
-        };
+        let configs = {};
+
+        if (Array.isArray(d)) {
+            configs = {
+                circulation: {
+                    subtitle: `Status: ${statusFilter || 'All'} | Period: ${monthLabel} | Records: ${d.length}`,
+                    head: [['Book', 'Borrower', 'Staff No.', 'Issue Date', 'Due Date', 'Return Date', 'Status']],
+                    body: d.map(r => [
+                        r.bookTitle, r.userName, r.staffNumber,
+                        fmt(r.issueDate), fmt(r.dueDate), fmt(r.returnDate), r.status
+                    ]),
+                },
+                inventory: {
+                    subtitle: `Total Books: ${d.length}`,
+                    head: [['Title', 'Author', 'Category', 'Call No.', 'Total', 'Available', 'Issued', 'Missing']],
+                    body: d.map(r => [
+                        r.title, r.author, r.categoryName, r.callNumber,
+                        r.totalCopies, r.availableCopies, r.issuedCopies, r.missingDamagedCopies
+                    ]),
+                },
+                holding: {
+                    subtitle: `Categories: ${d.length}`,
+                    head: [['Category', 'Total Books', 'Total Copies', 'Available', 'Issued', 'Missing/Damaged']],
+                    body: d.map(r => [
+                        r.categoryName, r.totalBooks, r.totalCopies,
+                        r.available, r.issued, r.missingDamaged
+                    ]),
+                },
+                overdue: {
+                    subtitle: `Period: ${monthLabel} | Total Overdue: ${d.length}`,
+                    head: [['Book', 'Staff No.', 'Borrower', 'Email', 'Due Date', 'Days Overdue', 'Est. Fine']],
+                    body: d.map(r => [
+                        r.bookTitle, r.staffNumber, r.userName, r.email,
+                        fmt(r.dueDate), r.daysOverdue,
+                        `₹${parseFloat(r.estimatedFine).toFixed(2)}`
+                    ]),
+                },
+            };
+        }
 
         if (activeTab === 'user') {
             doc.setFontSize(9);
@@ -179,14 +196,69 @@ const AdminReports = () => {
             doc.text(`Verification ID: ${verificationIdInput}`, 14, startY);
             doc.setTextColor(0);
             startY += 6;
+
+            const scopeLabel =
+                d.scopeType === 'call_number_range'
+                    ? d.scopeValue
+                    : d.scopeType === 'category'
+                        ? `Category: ${d.scopeValue}`
+                        : 'Full Library';
+
+            doc.setFontSize(10);
+            doc.setTextColor(80);
+            doc.text(`Scope: ${scopeLabel}`, 14, startY);
+            doc.setTextColor(0);
+
+            startY += 6;
             addMeta([
                 ['Total Scanned', d.totalScanned], ['Available', d.availableCount],
                 ['Missing', d.missingCount], ['Damaged', d.damagedCount],
             ]);
+
+            //verifiers
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+
+            doc.text('Verifiers:', 14, startY);
+            startY += 6;
+
+            (d.assignments || []).forEach((a, i) => {
+                const scope =
+                    a.scopeType === 'call_number_range'
+                        ? `${a.scopeFrom} => ${a.scopeTo}`
+                        : a.scopeType === 'category'
+                            ? `Category: ${a.scopeFrom}`
+                            : 'Full Library';
+
+                // Line 1: Name + designation
+                doc.setFont('helvetica', 'bold');
+                doc.text(`${i + 1}. ${a.name}`, 14, startY);
+
+                doc.setFont('helvetica', 'normal');
+                doc.text(`(${a.empId}) - ${a.designation}`, 80, startY);
+
+                startY += 5;
+
+                // Line 2: Scope
+                doc.setTextColor(100);
+                doc.text(`Scope: ${scope}`, 18, startY);
+                doc.setTextColor(0);
+
+                startY += 7;
+            });
+
             autoTable(doc, {
                 startY,
-                head: [['Accession No.', 'Title', 'Call No.', 'Previous Status', 'Marked Status', 'Changed']],
-                body: (d.details || []).map(r => [r.accessionNumber, r.bookTitle, r.callNumber, r.previousStatus, r.markedStatus, r.statusChanged ? 'Yes' : 'No']),
+                head: [['Accession No.', 'Title', 'Call No.', 'Verified By', 'Previous Status', 'Marked Status', 'Changed']],
+                body: (d.details || []).map(r => [
+                    r.accessionNumber,
+                    r.bookTitle,
+                    r.callNumber,
+                    r.verifierName || '-',
+                    r.previousStatus,
+                    r.markedStatus,
+                    r.statusChanged ? 'Yes' : 'No'
+                ]),
                 ...tableStyle,
             });
         } else {

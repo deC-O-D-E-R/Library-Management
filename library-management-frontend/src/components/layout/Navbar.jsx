@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, LogOut, Bell, Sun, Moon, X } from 'lucide-react';
+import { LogOut, Bell, Sun, Moon, X } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import Badge from '../ui/Badge';
@@ -84,14 +84,34 @@ const Navbar = () => {
         <nav className="fixed top-0 left-0 right-0 z-40 bg-sidebar border-b border-border h-16 flex items-center justify-between px-6 shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
 
             {/* Left — Brand */}
-            <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center ring-2 ring-accent/20">
-                    <Link to="/"><BookOpen size={16} className="text-primary" /></Link>
+            <Link to="/" className="flex items-center gap-3 group select-none">
+                {/* Logo wrapper with subtle glow ring on hover */}
+                <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-surface border border-border group-hover:border-accent/40 group-hover:shadow-[0_0_12px_rgba(var(--color-accent-rgb),0.15)] transition-all duration-200">
+                    <img
+                        src="/CDOT_logo.gif"
+                        alt="CDOT Logo"
+                        className="h-7 w-auto object-contain"
+                    />
                 </div>
-                <span className="text-text-primary font-bold text-lg tracking-tight">
-                    CDOT Library
-                </span>
-            </div>
+
+                {/* Text block */}
+                <div className="flex flex-col justify-center leading-none gap-0.5">
+                    <div className="flex items-baseline gap-1.5">
+                        <span className="text-text-primary font-extrabold text-base tracking-tight">
+                            CDOT
+                        </span>
+                        <span className="text-accent font-semibold text-base tracking-tight">
+                            Library
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <div className="w-3 h-px bg-accent/50 rounded-full" />
+                        <span className="text-text-secondary text-[10px] tracking-[0.15em] uppercase font-medium">
+                            Portal
+                        </span>
+                    </div>
+                </div>
+            </Link>
 
             {/* Right */}
             <div className="flex items-center gap-2">

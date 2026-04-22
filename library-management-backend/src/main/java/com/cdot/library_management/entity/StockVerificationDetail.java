@@ -20,6 +20,10 @@ public class StockVerificationDetail {
     @JoinColumn(name = "copy_id", nullable = false)
     private BookCopy bookCopy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assignment_id")
+    private VerificationAssignment assignment;
+
     @Column(name = "previous_status", nullable = false, length = 20)
     private String previousStatus;
 
@@ -34,7 +38,6 @@ public class StockVerificationDetail {
         verifiedAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
     public Integer getDetailId() { return detailId; }
     public void setDetailId(Integer detailId) { this.detailId = detailId; }
 
@@ -43,6 +46,9 @@ public class StockVerificationDetail {
 
     public BookCopy getBookCopy() { return bookCopy; }
     public void setBookCopy(BookCopy bookCopy) { this.bookCopy = bookCopy; }
+
+    public VerificationAssignment getAssignment() { return assignment; }
+    public void setAssignment(VerificationAssignment assignment) { this.assignment = assignment; }
 
     public String getPreviousStatus() { return previousStatus; }
     public void setPreviousStatus(String previousStatus) { this.previousStatus = previousStatus; }

@@ -18,6 +18,7 @@ public class StockVerificationResponseDTO {
     private int issuedCount;
     private int missingCount;
     private int damagedCount;
+    private List<AssignmentDTO> assignments;
     private List<ScanDetailDTO> details;
 
     public StockVerificationResponseDTO(Integer verificationId, Integer initiatedById,
@@ -26,7 +27,8 @@ public class StockVerificationResponseDTO {
                                          LocalDateTime startedAt, LocalDateTime completedAt,
                                          int totalScanned, int availableCount,
                                          int issuedCount, int missingCount,
-                                         int damagedCount, List<ScanDetailDTO> details) {
+                                         int damagedCount, List<AssignmentDTO> assignments,
+                                         List<ScanDetailDTO> details) {
         this.verificationId = verificationId;
         this.initiatedById = initiatedById;
         this.initiatedByName = initiatedByName;
@@ -40,10 +42,10 @@ public class StockVerificationResponseDTO {
         this.issuedCount = issuedCount;
         this.missingCount = missingCount;
         this.damagedCount = damagedCount;
+        this.assignments = assignments;
         this.details = details;
     }
 
-    // Getters
     public Integer getVerificationId() { return verificationId; }
     public Integer getInitiatedById() { return initiatedById; }
     public String getInitiatedByName() { return initiatedByName; }
@@ -57,7 +59,44 @@ public class StockVerificationResponseDTO {
     public int getIssuedCount() { return issuedCount; }
     public int getMissingCount() { return missingCount; }
     public int getDamagedCount() { return damagedCount; }
+    public List<AssignmentDTO> getAssignments() { return assignments; }
     public List<ScanDetailDTO> getDetails() { return details; }
+
+    public static class AssignmentDTO {
+        private Integer assignmentId;
+        private Integer userId;
+        private String name;
+        private String empId;
+        private String designation;
+        private String scopeType;
+        private String scopeFrom;
+        private String scopeTo;
+        private int scannedCount;
+
+        public AssignmentDTO(Integer assignmentId, Integer userId, String name,
+                              String empId, String designation, String scopeType,
+                              String scopeFrom, String scopeTo, int scannedCount) {
+            this.assignmentId = assignmentId;
+            this.userId = userId;
+            this.name = name;
+            this.empId = empId;
+            this.designation = designation;
+            this.scopeType = scopeType;
+            this.scopeFrom = scopeFrom;
+            this.scopeTo = scopeTo;
+            this.scannedCount = scannedCount;
+        }
+
+        public Integer getAssignmentId() { return assignmentId; }
+        public Integer getUserId() { return userId; }
+        public String getName() { return name; }
+        public String getEmpId() { return empId; }
+        public String getDesignation() { return designation; }
+        public String getScopeType() { return scopeType; }
+        public String getScopeFrom() { return scopeFrom; }
+        public String getScopeTo() { return scopeTo; }
+        public int getScannedCount() { return scannedCount; }
+    }
 
     public static class ScanDetailDTO {
         private Integer detailId;
@@ -69,11 +108,14 @@ public class StockVerificationResponseDTO {
         private String markedStatus;
         private boolean statusChanged;
         private LocalDateTime verifiedAt;
+        private Integer assignmentId;
+        private String verifierName;
 
         public ScanDetailDTO(Integer detailId, Integer copyId, String accessionNumber,
                               String bookTitle, String callNumber, String previousStatus,
                               String markedStatus, boolean statusChanged,
-                              LocalDateTime verifiedAt) {
+                              LocalDateTime verifiedAt, Integer assignmentId,
+                              String verifierName) {
             this.detailId = detailId;
             this.copyId = copyId;
             this.accessionNumber = accessionNumber;
@@ -83,6 +125,8 @@ public class StockVerificationResponseDTO {
             this.markedStatus = markedStatus;
             this.statusChanged = statusChanged;
             this.verifiedAt = verifiedAt;
+            this.assignmentId = assignmentId;
+            this.verifierName = verifierName;
         }
 
         public Integer getDetailId() { return detailId; }
@@ -94,5 +138,7 @@ public class StockVerificationResponseDTO {
         public String getMarkedStatus() { return markedStatus; }
         public boolean isStatusChanged() { return statusChanged; }
         public LocalDateTime getVerifiedAt() { return verifiedAt; }
+        public Integer getAssignmentId() { return assignmentId; }
+        public String getVerifierName() { return verifierName; }
     }
 }

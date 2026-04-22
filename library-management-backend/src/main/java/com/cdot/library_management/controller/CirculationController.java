@@ -98,4 +98,9 @@ public class CirculationController {
     public ResponseEntity<List<CirculationResponseDTO>> getIssuedCirculations() {
         return ResponseEntity.ok(circulationService.getIssuedCirculations());
     }
+
+    @GetMapping("/categories")
+    public ResponseEntity<?> getAllCategories() {
+        return ResponseEntity.ok(bookService.getAllCategories());
+    }
 }
