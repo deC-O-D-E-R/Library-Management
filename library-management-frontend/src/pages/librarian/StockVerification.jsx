@@ -74,7 +74,7 @@ const ScopeCell = ({ assignments }) => {
             {/* Dropdown */}
             {open && (
                 <div className="
-                    absolute left-0 top-10 z-50
+                    absolute left-0 top-10 -translate-y-4 z-[9999]
                     w-64 max-h-60 overflow-y-auto
                     bg-sidebar border border-border rounded-xl shadow-lg
                 ">

@@ -13,12 +13,27 @@ export const AuthProvider = ({ children }) => {
         const storedUser = localStorage.getItem('user');
 
         if (storedToken && storedUser) {
-            setToken(storedToken);
-            setUser(JSON.parse(storedUser));
+            if (isTokenExpired(storedToken)) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+            } else {
+                setToken(storedToken);
+                setUser(JSON.parse(storedUser));
+            }
         }
 
         setLoading(false);
     }, []);
+
+    const isTokenExpired = (token) => {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return payload.exp * 1000 < Date.now();
+        } catch {
+            return true;
+        }
+    };
+
 
     const login = (userData, jwtToken) => {
         localStorage.setItem('token', jwtToken);
