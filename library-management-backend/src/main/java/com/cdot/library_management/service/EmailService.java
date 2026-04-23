@@ -3,6 +3,7 @@ package com.cdot.library_management.service;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Async;
 
 @Service
 public class EmailService {
@@ -13,6 +14,7 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
+    @Async
     public void sendBookIssuedEmail(String toEmail, String userName,
                                     String bookTitle, String accessionNumber,
                                     String dueDate) {
@@ -27,6 +29,7 @@ public class EmailService {
         sendEmail(toEmail, subject, body);
     }
 
+    @Async
     public void sendBookReturnedEmail(String toEmail, String userName,
                                       String bookTitle, String returnDate) {
         String subject = "Book Returned - CDOT Library";
@@ -39,6 +42,7 @@ public class EmailService {
         sendEmail(toEmail, subject, body);
     }
 
+    @Async
     public void sendDueReminderEmail(String toEmail, String userName,
                                      String bookTitle, String dueDate) {
         String subject = "Due Date Reminder - CDOT Library";
@@ -51,6 +55,7 @@ public class EmailService {
         sendEmail(toEmail, subject, body);
     }
 
+    @Async
     public void sendOverdueEmail(String toEmail, String userName,
                                   String bookTitle, String dueDate,
                                   long daysOverdue, double fineAmount) {
@@ -66,6 +71,7 @@ public class EmailService {
         sendEmail(toEmail, subject, body);
     }
 
+    @Async
     public void sendFineEmail(String toEmail, String userName,
                                String bookTitle, double fineAmount) {
         String subject = "Fine Notice - CDOT Library";
@@ -78,6 +84,7 @@ public class EmailService {
         sendEmail(toEmail, subject, body);
     }
 
+    @Async
     public void sendReservationAvailableEmail(String toEmail, String userName, String bookTitle) {
         String subject = "Book Available - CDOT Library";
         String body = "Dear " + userName + ",\n\n"
@@ -88,6 +95,7 @@ public class EmailService {
         sendEmail(toEmail, subject, body);
     }
 
+    @Async
     public void sendReturnReminderEmail(String toEmail, String userName, String bookTitle) {
         String subject = "Return Request - CDOT Library";
         String body = "Dear " + userName + ",\n\n"
