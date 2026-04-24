@@ -3,9 +3,11 @@ package com.cdot.library_management.controller;
 import com.cdot.library_management.dto.BookResponseDTO;
 import com.cdot.library_management.dto.CirculationResponseDTO;
 import com.cdot.library_management.dto.FineResponseDTO;
+import com.cdot.library_management.dto.ChangePasswordRequest;
 import com.cdot.library_management.entity.User;
 import com.cdot.library_management.repository.UserRepository;
 import com.cdot.library_management.service.BookService;
+import com.cdot.library_management.service.UserService;
 import com.cdot.library_management.service.CirculationService;
 import com.cdot.library_management.service.FineService;
 import org.springframework.http.ResponseEntity;
@@ -19,15 +21,18 @@ import java.util.List;
 public class EmployeeController {
 
     private final BookService bookService;
+    private final UserService userService;
     private final CirculationService circulationService;
     private final FineService fineService;
     private final UserRepository userRepository;
 
     public EmployeeController(BookService bookService,
+                               UserService userService,
                                CirculationService circulationService,
                                FineService fineService,
                                UserRepository userRepository) {
         this.bookService = bookService;
+        this.userService = userService;
         this.circulationService = circulationService;
         this.fineService = fineService;
         this.userRepository = userRepository;
@@ -107,5 +112,17 @@ public class EmployeeController {
                 .getAuthentication().getName();
         return userRepository.findByStaffNumber(staffNumber)
                 .orElseThrow(() -> new RuntimeException("Logged in user not found"));
+    }
+
+    @PatchMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+            @RequestBody ChangePasswordRequest request,
+            org.springframework.security.core.Authentication authentication) {
+        try {
+            userService.changePassword(authentication.getName(), request);
+            return ResponseEntity.ok("Password changed successfully");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

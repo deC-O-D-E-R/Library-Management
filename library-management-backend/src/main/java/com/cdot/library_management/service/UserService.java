@@ -2,6 +2,7 @@ package com.cdot.library_management.service;
 
 import com.cdot.library_management.dto.UserRequestDTO;
 import com.cdot.library_management.dto.UserResponseDTO;
+import com.cdot.library_management.dto.ChangePasswordRequest;
 import com.cdot.library_management.entity.Role;
 import com.cdot.library_management.entity.User;
 import com.cdot.library_management.entity.UserRole;
@@ -327,6 +328,23 @@ public class UserService {
         }
 
         return new BulkUploadResponse(totalRows, successRows, totalRows - successRows, errors);
+    }
+
+    @Transactional
+    public void changePassword(String staffNumber, ChangePasswordRequest request) {
+        User user = userRepository.findByStaffNumber(staffNumber)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        if (request.getNewPassword() == null || request.getNewPassword().length() < 6) {
+            throw new RuntimeException("New password must be at least 6 characters");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 
     private UserRequestDTO mapColumnsToDTO(String[] cols, int rowNum) {

@@ -125,3 +125,7 @@ export const fulfillReservation = (reservationId) =>
 
 export const getReservationsByBook = (bookId) =>
     axiosInstance.get(`/librarian/reservations/book/${bookId}`);
+
+//change password
+export const changePassword = (data) =>
+    axiosInstance.patch('/employee/change-password', data);
