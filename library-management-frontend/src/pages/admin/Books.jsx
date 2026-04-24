@@ -360,6 +360,16 @@ const AdminBooks = () => {
                                 <p className="text-text-secondary text-xs uppercase tracking-wider">Price</p>
                                 <p className="text-text-primary mt-1">{formatCurrency(selectedBook.price)}</p>
                             </div>
+                            <div>
+                                <p className="text-text-secondary text-xs uppercase tracking-wider">Receipt Date</p>
+                                <p className="text-text-primary mt-1">
+                                    {selectedBook.receiptDate ? new Date(selectedBook.receiptDate).toLocaleDateString() : '—'}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-text-secondary text-xs uppercase tracking-wider">Total Copies</p>
+                                <p className="text-text-primary mt-1">{selectedBook.totalCopies}</p>
+                            </div>
                         </div>
 
                         <div className="flex gap-3">
@@ -438,18 +448,18 @@ const AdminBooks = () => {
 
                         <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-sm transition-colors
                             ${bulkFile
-                            ? 'border-success bg-background-success text-success'
-                            : 'border-border-secondary text-text-secondary hover:border-border-primary hover:bg-background-secondary'}`}>
+                                ? 'border-success bg-background-success text-success'
+                                : 'border-border-secondary text-text-secondary hover:border-border-primary hover:bg-background-secondary'}`}>
                             <UploadIcon className="w-4 h-4" />
                             <span>{bulkFile ? bulkFile.name : 'Choose file'}</span>
                             <input type="file" accept=".csv,.xlsx" className="hidden"
-                            onChange={(e) => setBulkFile(e.target.files[0])} />
+                                onChange={(e) => setBulkFile(e.target.files[0])} />
                         </label>
 
                         <div className="flex justify-end gap-3">
                             <Button variant="secondary" onClick={() => setShowBulkModal(false)}>Cancel</Button>
                             <Button onClick={handleBulkUpload} disabled={!bulkFile || saving}>
-                            {saving ? 'Uploading...' : 'Upload'}
+                                {saving ? 'Uploading...' : 'Upload'}
                             </Button>
                         </div>
                     </div>

@@ -214,6 +214,16 @@ const ReturnBook = () => {
                                 <p className="text-text-secondary text-xs uppercase tracking-wider">Price</p>
                                 <p className="text-text-primary mt-1">{formatCurrency(selectedBook.price)}</p>
                             </div>
+                            <div>
+                                <p className="text-text-secondary text-xs uppercase tracking-wider">Receipt Date</p>
+                                <p className="text-text-primary mt-1">
+                                    {selectedBook.receiptDate ? new Date(selectedBook.receiptDate).toLocaleDateString() : '—'}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-text-secondary text-xs uppercase tracking-wider">Total Copies</p>
+                                <p className="text-text-primary mt-1">{selectedBook.totalCopies}</p>
+                            </div>
                         </div>
 
                         <div className="flex gap-3">

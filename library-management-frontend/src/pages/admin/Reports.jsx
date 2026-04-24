@@ -28,7 +28,7 @@ const reportTabs = [
 ];
 
 // tabs where date filter is not applicable
-const NO_DATE_FILTER = ['inventory', 'holding', 'stock'];
+const NO_DATE_FILTER = ['holding', 'stock'];
 
 const AdminReports = () => {
     const [activeTab, setActiveTab] = useState('circulation');
@@ -69,11 +69,20 @@ const AdminReports = () => {
     // ─── Date Filter ──────────────────────────────────────────────────────
     const applyDateFilter = (rows, dateKey) => {
         if (!selectedMonth || !rows) return rows;
-        const [year, month] = selectedMonth.split('-').map(Number);
+
+        const parts = selectedMonth.split('-');
+        const year = Number(parts[0]);
+        const month = parts[1] ? Number(parts[1]) : null;
+
         return rows.filter(r => {
             if (!r[dateKey]) return false;
             const d = new Date(r[dateKey]);
-            return d.getFullYear() === year && d.getMonth() + 1 === month;
+
+            if (month) {
+                return d.getFullYear() === year && d.getMonth() + 1 === month;
+            }
+
+            return d.getFullYear() === year;
         });
     };
 
@@ -82,6 +91,7 @@ const AdminReports = () => {
         switch (activeTab) {
             case 'circulation': return applyDateFilter(data, 'issueDate');
             case 'overdue': return applyDateFilter(data, 'dueDate');
+            case 'inventory': return applyDateFilter(data, 'receiptDate');
             case 'user': return {
                 ...data,
                 circulationHistory: applyDateFilter(data.circulationHistory || [], 'issueDate'),
@@ -431,8 +441,12 @@ const AdminReports = () => {
                                     <select
                                         value={selectedMonth ? selectedMonth.split('-')[1] : ''}
                                         onChange={(e) => {
-                                            const year = selectedMonth ? selectedMonth.split('-')[0] : new Date().getFullYear();
-                                            setSelectedMonth(e.target.value ? `${year}-${e.target.value}` : '');
+                                            const year = selectedMonth ? selectedMonth.split('-')[0] : '';
+                                            setSelectedMonth(
+                                                e.target.value
+                                                    ? (year ? `${year}-${e.target.value}` : `-${e.target.value}`)
+                                                    : (year ? `${year}` : '')
+                                            );
                                             setData(null);
                                         }}
                                         className="bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
@@ -447,8 +461,12 @@ const AdminReports = () => {
                                     <select
                                         value={selectedMonth ? selectedMonth.split('-')[0] : ''}
                                         onChange={(e) => {
-                                            const month = selectedMonth ? selectedMonth.split('-')[1] : '01';
-                                            setSelectedMonth(e.target.value ? `${e.target.value}-${month}` : '');
+                                            const month = selectedMonth ? selectedMonth.split('-')[1] : '';
+                                            setSelectedMonth(
+                                                e.target.value
+                                                    ? (month ? `${e.target.value}-${month}` : `${e.target.value}`)
+                                                    : ''
+                                            );
                                             setData(null);
                                         }}
                                         className="bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
@@ -649,6 +667,16 @@ const AdminReports = () => {
                             <div>
                                 <p className="text-text-secondary text-xs uppercase tracking-wider">Price</p>
                                 <p className="text-text-primary mt-1">{formatCurrency(selectedBook.price)}</p>
+                            </div>
+                            <div>
+                                <p className="text-text-secondary text-xs uppercase tracking-wider">Receipt Date</p>
+                                <p className="text-text-primary mt-1">
+                                    {selectedBook.receiptDate ? new Date(selectedBook.receiptDate).toLocaleDateString() : '—'}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-text-secondary text-xs uppercase tracking-wider">Total Copies</p>
+                                <p className="text-text-primary mt-1">{selectedBook.totalCopies}</p>
                             </div>
                         </div>
 
