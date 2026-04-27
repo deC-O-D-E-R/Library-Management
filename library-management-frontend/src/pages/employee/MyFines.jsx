@@ -4,7 +4,7 @@ import Card from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
 import Badge from '../../components/ui/Badge';
 import Loader from '../../components/ui/Loader';
-import { getMyFines } from '../../api/userApi';
+import { getMyFines, isFineSystemEnabledForUser } from '../../api/userApi';
 import { formatDate, formatCurrency } from '../../utils/helpers';
 
 const tabs = [
@@ -18,12 +18,17 @@ const MyFines = () => {
     const [fines, setFines] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('all');
+    const [fineSystemEnabled, setFineSystemEnabled] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await getMyFines();
+                const [res, fineConfigRes] = await Promise.all([
+                    getMyFines(),
+                    isFineSystemEnabledForUser(),
+                ]);
                 setFines(res.data);
+                setFineSystemEnabled(fineConfigRes.data);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -62,6 +67,28 @@ const MyFines = () => {
     ];
 
     if (loading) return <Layout><Loader /></Layout>;
+
+    if (!fineSystemEnabled) {
+        return (
+            <Layout>
+                <div className="flex flex-col gap-6">
+                    <div>
+                        <h1 className="text-text-primary text-2xl font-bold">My Fines</h1>
+                        <p className="text-text-secondary text-sm mt-1">
+                            View your fine history and outstanding payments
+                        </p>
+                    </div>
+                    <div className="flex flex-col items-center justify-center py-24 gap-4">
+                        <span className="text-5xl">⚠️</span>
+                        <p className="text-text-primary font-semibold text-lg">Fine System is Disabled</p>
+                        <p className="text-text-secondary text-sm text-center max-w-sm">
+                            The library has not enabled the fine system yet. No fines are being charged for overdue returns.
+                        </p>
+                    </div>
+                </div>
+            </Layout>
+        );
+    }
 
     return (
         <Layout>

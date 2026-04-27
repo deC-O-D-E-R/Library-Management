@@ -9,6 +9,7 @@ import com.cdot.library_management.repository.UserRepository;
 import com.cdot.library_management.service.BookService;
 import com.cdot.library_management.service.UserService;
 import com.cdot.library_management.service.CirculationService;
+import com.cdot.library_management.service.SystemConfigService;
 import com.cdot.library_management.service.FineService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,17 +26,20 @@ public class EmployeeController {
     private final CirculationService circulationService;
     private final FineService fineService;
     private final UserRepository userRepository;
+    private final SystemConfigService systemConfigService;
 
     public EmployeeController(BookService bookService,
                                UserService userService,
                                CirculationService circulationService,
                                FineService fineService,
-                               UserRepository userRepository) {
+                               UserRepository userRepository,
+                               SystemConfigService systemConfigService) {
         this.bookService = bookService;
         this.userService = userService;
         this.circulationService = circulationService;
         this.fineService = fineService;
         this.userRepository = userRepository;
+        this.systemConfigService = systemConfigService;
     }
 
 
@@ -93,6 +97,11 @@ public class EmployeeController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping("/fines/system/fine-enabled")
+    public ResponseEntity<Boolean> isFineSystemEnabled() {
+        return ResponseEntity.ok(systemConfigService.isFineSystemEnabled());
     }
 
     @GetMapping("/fines/my")

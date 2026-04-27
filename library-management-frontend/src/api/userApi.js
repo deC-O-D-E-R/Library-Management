@@ -19,6 +19,9 @@ export const getMyHistory = () =>
     axiosInstance.get('/employee/circulation/history');
 
 //fines (employees)
+export const isFineSystemEnabledForUser = () =>
+    axiosInstance.get('/employee/fines/system/fine-enabled');
+
 export const getMyFines = () =>
     axiosInstance.get('/employee/fines/my');
 
