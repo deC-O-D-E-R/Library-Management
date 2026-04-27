@@ -2,6 +2,7 @@ package com.cdot.library_management.controller;
 
 import com.cdot.library_management.dto.FineResponseDTO;
 import com.cdot.library_management.service.FineService;
+import com.cdot.library_management.service.SystemConfigService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,9 +13,17 @@ import java.util.List;
 public class FineController {
 
     private final FineService fineService;
+    private final SystemConfigService systemConfigService;
 
-    public FineController(FineService fineService) {
+    public FineController(FineService fineService,
+                          SystemConfigService systemConfigService) {
         this.fineService = fineService;
+        this.systemConfigService = systemConfigService;
+    }
+
+    @GetMapping("/system/fine-enabled")
+    public ResponseEntity<Boolean> isFineSystemEnabled() {
+        return ResponseEntity.ok(systemConfigService.isFineSystemEnabled());
     }
 
     @GetMapping

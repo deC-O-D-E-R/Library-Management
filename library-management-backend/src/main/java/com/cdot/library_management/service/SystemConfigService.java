@@ -29,6 +29,10 @@ public class SystemConfigService {
         return getIntValue("reminder_days_before");
     }
 
+    public boolean isFineSystemEnabled() {
+        return Boolean.parseBoolean(getValue("fine_system_enabled"));
+    }
+
     public String getValue(String key) {
         return systemConfigRepository.findByConfigKey(key)
                 .map(SystemConfig::getConfigValue)

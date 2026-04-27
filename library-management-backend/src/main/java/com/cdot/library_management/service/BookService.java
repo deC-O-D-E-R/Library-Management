@@ -23,6 +23,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.*;
+import java.util.stream.Stream;
 
 @Service
 public class BookService {
@@ -153,24 +155,51 @@ public class BookService {
 
     //search books
     public List<BookResponseDTO> searchBooks(String title, String author,
-                                              String isbn, String callNumber) {
-        if (isbn != null && !isbn.isBlank()) {
+                                            String isbn, String callNumber) {
+        //if more than one param is provided, treat it as an "All" search
+        long filledCount = Stream.of(title, author, isbn, callNumber)
+                .filter(s -> s != null && !s.isBlank()).count();
+
+        if (filledCount > 1) {
+            Map<Integer, BookResponseDTO> merged = new LinkedHashMap<>();
+
+            if (isbn != null && !isbn.isBlank())
+                bookRepository.findByIsbn(isbn)
+                        .ifPresent(b -> merged.put(b.getBookId(), mapToResponseDTO(b)));
+
+            if (title != null && !title.isBlank())
+                bookRepository.findByTitleContainingIgnoreCase(title)
+                        .forEach(b -> merged.putIfAbsent(b.getBookId(), mapToResponseDTO(b)));
+
+            if (author != null && !author.isBlank())
+                bookRepository.findByAuthorContainingIgnoreCase(author)
+                        .forEach(b -> merged.putIfAbsent(b.getBookId(), mapToResponseDTO(b)));
+
+            if (callNumber != null && !callNumber.isBlank())
+                bookRepository.findByCallNumberContainingIgnoreCase(callNumber)
+                        .forEach(b -> merged.putIfAbsent(b.getBookId(), mapToResponseDTO(b)));
+
+            return new ArrayList<>(merged.values());
+        }
+
+        //single-field search
+        if (isbn != null && !isbn.isBlank())
             return bookRepository.findByIsbn(isbn)
                     .map(b -> List.of(mapToResponseDTO(b)))
                     .orElse(List.of());
-        }
-        if (title != null && !title.isBlank()) {
+
+        if (title != null && !title.isBlank())
             return bookRepository.findByTitleContainingIgnoreCase(title)
                     .stream().map(this::mapToResponseDTO).collect(Collectors.toList());
-        }
-        if (author != null && !author.isBlank()) {
+
+        if (author != null && !author.isBlank())
             return bookRepository.findByAuthorContainingIgnoreCase(author)
                     .stream().map(this::mapToResponseDTO).collect(Collectors.toList());
-        }
-        if (callNumber != null && !callNumber.isBlank()) {
+
+        if (callNumber != null && !callNumber.isBlank())
             return bookRepository.findByCallNumberContainingIgnoreCase(callNumber)
                     .stream().map(this::mapToResponseDTO).collect(Collectors.toList());
-        }
+
         return getAllBooks();
     }
 
@@ -200,6 +229,51 @@ public class BookService {
         bookCopyRepository.save(copy);
 
         return mapToResponseDTO(book);
+    }
+
+    //handle multiple rows of same book or a book already in  db
+    @Transactional
+    public void addBookOrAddCopy(BookRequestDTO dto) {
+
+        Optional<Book> existingByIsbn = (dto.getIsbn() != null && !dto.getIsbn().isBlank())
+                ? bookRepository.findByIsbn(dto.getIsbn())
+                : Optional.empty();
+
+        Optional<Book> existingByTitleAuthor = existingByIsbn.isPresent()
+                ? Optional.empty()
+                : bookRepository.findByTitleIgnoreCaseAndAuthorIgnoreCase(
+                    dto.getTitle().trim(), dto.getAuthor().trim());
+
+        Book book = existingByIsbn.orElse(existingByTitleAuthor.orElse(null));
+
+        if (book == null) {
+            Category category = categoryRepository.findById(dto.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Category not found: " + dto.getCategoryId()));
+
+            book = new Book();
+            book.setCategory(category);
+            book.setTitle(dto.getTitle());
+            book.setAuthor(dto.getAuthor());
+            book.setIsbn(dto.getIsbn());
+            book.setCallNumber(dto.getCallNumber());
+            book.setVendorName(dto.getVendorName());
+            book.setInvoiceNo(dto.getInvoiceNo());
+            book.setPrice(dto.getPrice());
+            book.setReceiptDate(dto.getReceiptDate());
+            book = bookRepository.saveAndFlush(book);
+        }
+
+        for (String accession : dto.getAccessionNumbers()) {
+            if (accession == null || accession.isBlank()) continue;
+            if (bookCopyRepository.findByAccessionNumber(accession).isPresent()) {
+                throw new RuntimeException("Accession number already exists: " + accession);
+            }
+            BookCopy copy = new BookCopy();
+            copy.setBook(book);
+            copy.setAccessionNumber(accession);
+            copy.setStatus("available");
+            bookCopyRepository.save(copy);
+        }
     }
 
     //delete copy
@@ -253,7 +327,7 @@ public class BookService {
 
                 try {
                     BookRequestDTO dto = mapColumnsToDTO(cols, rowNum);
-                    addBook(dto);
+                    addBookOrAddCopy(dto);
                     successRows++;
                 } catch (Exception e) {
                     String isbn = cols.length > 2 ? cols[2].trim() : "N/A";
@@ -293,7 +367,7 @@ public class BookService {
                                 ? formatter.formatCellValue(row.getCell(i)) : "";
                     }
                     BookRequestDTO dto = mapColumnsToDTO(cols, rowNum + 1);
-                    addBook(dto);
+                    addBookOrAddCopy(dto);   
                     successRows++;
                 } catch (Exception e) {
                     String isbn = formatter.formatCellValue(row.getCell(2));

@@ -162,7 +162,7 @@ const AdminReports = () => {
                 inventory: {
                     subtitle: `Total Books: ${d.length}`,
                     head: [['Title', 'Author', 'Category', 'Call No.', 'Total', 'Available', 'Issued', 'Missing']],
-                    body: d.map(r => [
+                    body: [...d].sort((a, b) => a.callNumber?.localeCompare(b.callNumber)).map(r => [  // ← ADD sort
                         r.title, r.author, r.categoryName, r.callNumber,
                         r.totalCopies, r.availableCopies, r.issuedCopies, r.missingDamagedCopies
                     ]),
@@ -304,7 +304,7 @@ const AdminReports = () => {
                 'Issue Date': fmt(r.issueDate), 'Due Date': fmt(r.dueDate),
                 'Return Date': fmt(r.returnDate), 'Status': r.status,
             })),
-            inventory: () => d.map(r => ({
+            inventory: () => [...d].sort((a, b) => a.callNumber?.localeCompare(b.callNumber)).map(r => ({  // ← ADD sort
                 'Title': r.title, 'Author': r.author, 'Category': r.categoryName,
                 'Call No.': r.callNumber, 'Total': r.totalCopies,
                 'Available': r.availableCopies, 'Issued': r.issuedCopies,
@@ -580,12 +580,27 @@ const AdminReports = () => {
 
                         {/* Inventory */}
                         {activeTab === 'inventory' && (
-                            <Table columns={inventoryColumns} data={filteredData} emptyMessage="No books found" />
+                            <Table
+                                columns={inventoryColumns}
+                                data={[...filteredData].sort((a, b) => a.callNumber?.localeCompare(b.callNumber))}
+                                emptyMessage="No books found"
+                            />
                         )}
-
                         {/* Holding Summary */}
                         {activeTab === 'holding' && (
-                            <Table columns={holdingColumns} data={filteredData} emptyMessage="No data found" />
+                            <Table
+                                columns={holdingColumns}
+                                data={[...filteredData]
+                                    .sort((a, b) => {
+                                        const aIsTotal = a.categoryName?.toLowerCase().includes('total');
+                                        const bIsTotal = b.categoryName?.toLowerCase().includes('total');
+                                        if (aIsTotal) return 1;
+                                        if (bIsTotal) return -1;
+                                        return a.categoryName?.localeCompare(b.categoryName);
+                                    })
+                                }
+                                emptyMessage="No data found"
+                            />
                         )}
 
                         {/* Overdue */}

@@ -6,7 +6,7 @@ import Table from '../../components/ui/Table';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Loader from '../../components/ui/Loader';
-import { getAllFines, getPendingFines, markFineAsPaid, markFineAsWaived } from '../../api/userApi';
+import { getAllFines, getPendingFines, markFineAsPaid, markFineAsWaived, isFineSystemEnabled } from '../../api/userApi';
 import { formatDate, formatCurrency } from '../../utils/helpers';
 
 const tabs = [
@@ -33,15 +33,18 @@ const Fines = () => {
     });
     const [empSearch, setEmpSearch] = useState('');
     const [selectedEmp, setSelectedEmp] = useState(null);
+    const [fineSystemEnabled, setFineSystemEnabled] = useState(true);
 
     const fetchData = async () => {
         try {
-            const [allRes, pendingRes] = await Promise.all([
+            const [allRes, pendingRes, fineConfigRes] = await Promise.all([
                 getAllFines(),
                 getPendingFines(),
+                isFineSystemEnabled(),
             ]);
             setAll(allRes.data);
             setPending(pendingRes.data);
+            setFineSystemEnabled(fineConfigRes.data);
         } catch (err) {
             console.error(err);
         } finally {
@@ -60,7 +63,24 @@ const Fines = () => {
         }
     };
 
-    const filtered = getTabData().filter(f => {
+    const applyDateFilter = (rows) => {
+        if (!selectedMonth || !rows) return rows;
+
+        const parts = selectedMonth.split('-');
+        const year = Number(parts[0]);
+        const month = parts[1] ? Number(parts[1]) : null;
+
+        return rows.filter(f => {
+            const dateToUse = f.returnDate ? new Date(f.returnDate) : new Date(f.issueDate);
+
+            if (month) {
+                return dateToUse.getFullYear() === year && (dateToUse.getMonth() + 1) === month;
+            }
+            return dateToUse.getFullYear() === year;
+        });
+    };
+
+    const filtered = applyDateFilter(getTabData()).filter(f => {
         const q = search.toLowerCase();
         return (
             f.userName.toLowerCase().includes(q) ||
@@ -177,11 +197,11 @@ const Fines = () => {
     const summaryBlock = (data) => {
         const total = data.length;
         const collected = data.filter(f => f.status === 'paid').reduce((s, f) => s + parseFloat(f.amount), 0);
-        const pending = data.filter(f => f.status === 'pending').reduce((s, f) => s + parseFloat(f.amount), 0);
+        const pendingAmount = data.filter(f => f.status === 'pending').reduce((s, f) => s + parseFloat(f.amount), 0);
         return `
       <div class="summary-item"><div class="label">Total Fines</div><div class="value">${total}</div></div>
       <div class="summary-item"><div class="label">Collected</div><div class="value" style="color:#0a5d36">₹${collected.toFixed(2)}</div></div>
-      <div class="summary-item"><div class="label">Pending</div><div class="value" style="color:#856404">₹${pending.toFixed(2)}</div></div>
+      <div class="summary-item"><div class="label">Pending</div><div class="value" style="color:#856404">₹${pendingAmount.toFixed(2)}</div></div>
     `;
     };
 
@@ -200,7 +220,7 @@ const Fines = () => {
     const handleMonthReport = () => {
         const [year, month] = selectedMonth.split('-').map(Number);
         const data = all.filter(f => {
-            const d = new Date(f.issueDate);
+            const d = f.returnDate ? new Date(f.returnDate) : new Date(f.issueDate);
             return d.getFullYear() === year && d.getMonth() + 1 === month;
         });
         if (!data.length) return alert('No fines found for the selected month.');
@@ -269,6 +289,30 @@ const Fines = () => {
 
     if (loading) return <Layout><Loader /></Layout>;
 
+    if (!fineSystemEnabled) {
+        return (
+            <Layout>
+                <div className="flex flex-col gap-6">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <h1 className="text-text-primary text-2xl font-bold">Fines</h1>
+                            <p className="text-text-secondary text-sm mt-1">
+                                Manage overdue fines and payments
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex flex-col items-center justify-center py-24 gap-4">
+                        <span className="text-5xl">⚠️</span>
+                        <p className="text-text-primary font-semibold text-lg">Fine System is Disabled</p>
+                        <p className="text-text-secondary text-sm text-center max-w-sm">
+                            Fines are not being generated for overdue returns. Contact your admin to enable it from System Config.
+                        </p>
+                    </div>
+                </div>
+            </Layout>
+        );
+    }
+
     return (
         <Layout>
             <div className="flex flex-col gap-6">
@@ -332,6 +376,44 @@ const Fines = () => {
                             )}
                         </button>
                     ))}
+                </div>
+
+
+                <div className="flex gap-2">
+                    {/* Month */}
+                    <select
+                        value={selectedMonth ? selectedMonth.split('-')[1] : ''}
+                        onChange={(e) => {
+                            const year = selectedMonth?.split('-')[0] || new Date().getFullYear();
+                            setSelectedMonth(e.target.value ? `${year}-${e.target.value}` : '');
+                        }}
+                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm"
+                    >
+                        <option value="">All Months</option>
+                        {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+                            .map((m, i) => (
+                                <option key={i} value={String(i + 1).padStart(2, '0')}>{m}</option>
+                            ))}
+                    </select>
+
+                    {/* Year */}
+                    <select
+                        value={selectedMonth ? selectedMonth.split('-')[0] : ''}
+                        onChange={(e) => {
+                            const month = selectedMonth?.split('-')[1] || '';
+                            setSelectedMonth(
+                                e.target.value
+                                    ? (month ? `${e.target.value}-${month}` : `${e.target.value}`)
+                                    : ''
+                            );
+                        }}
+                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm"
+                    >
+                        <option value="">All Years</option>
+                        {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                            <option key={y} value={y}>{y}</option>
+                        ))}
+                    </select>
                 </div>
 
                 {/* Search */}

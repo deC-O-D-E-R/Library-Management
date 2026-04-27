@@ -44,6 +44,7 @@ const Sidebar = () => {
 
     const librarianLinks = [
         { to: '/librarian/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { to: '/librarian/search', icon: Search, label: 'Search Books' },
         { to: '/librarian/issue', icon: BookCheck, label: 'Issue Book' },
         { to: '/librarian/return', icon: RotateCcw, label: 'Return Book' },
         { to: '/librarian/circulation', icon: List, label: 'Circulation' },

@@ -13,6 +13,7 @@ import AdminNotifications from './pages/admin/Notifications';
 import AdminConfig from './pages/admin/Config';
 
 import LibrarianDashboard from './pages/librarian/Dashboard';
+import SearchBooksLibrarian from './pages/librarian/SearchBooksLibrarian';
 import IssueBook from './pages/librarian/IssueBook';
 import ReturnBook from './pages/librarian/ReturnBook';
 import Circulation from './pages/librarian/Circulation';
@@ -67,6 +68,7 @@ const AppRoutes = () => {
 
             {/* Librarian Routes */}
             <Route path="/librarian/dashboard" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><LibrarianDashboard /></ProtectedRoute>} />
+            <Route path="/librarian/search" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><SearchBooksLibrarian /></ProtectedRoute>} />
             <Route path="/librarian/issue" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><IssueBook /></ProtectedRoute>} />
             <Route path="/librarian/return" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><ReturnBook /></ProtectedRoute>} />
             <Route path="/librarian/circulation" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><Circulation /></ProtectedRoute>} />

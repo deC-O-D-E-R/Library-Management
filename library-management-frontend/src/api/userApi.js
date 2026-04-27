@@ -61,6 +61,9 @@ export const returnBook = (circulationId) =>
     axiosInstance.post(`/librarian/circulation/return/${circulationId}`);
 
 //fines (Librarian)
+export const isFineSystemEnabled = () => 
+    axiosInstance.get('/librarian/fines/system/fine-enabled');
+
 export const getAllUsers = () =>
     axiosInstance.get('/librarian/circulation/users');
 

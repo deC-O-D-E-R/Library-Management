@@ -28,6 +28,9 @@ const Circulation = () => {
     const [search, setSearch] = useState('');
     const [selectedBook, setSelectedBook] = useState(null);
     const [showBookModal, setShowBookModal] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const ROWS_PER_PAGE = 10;
+    const [selectedMonth, setSelectedMonth] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -68,7 +71,19 @@ const Circulation = () => {
         }
     };
 
-    const filtered = getTabData().filter(c => {
+    const applyDateFilter = (rows) => {
+        if (!selectedMonth || !rows) return rows;
+        const parts = selectedMonth.split('-');
+        const year = Number(parts[0]);
+        const month = parts[1] ? Number(parts[1]) : null;
+        return rows.filter(c => {
+            const dateToUse = c.returnDate ? new Date(c.returnDate) : new Date(c.issueDate);
+            if (month) return dateToUse.getFullYear() === year && (dateToUse.getMonth() + 1) === month;
+            return dateToUse.getFullYear() === year;
+        });
+    };
+
+    const filtered = applyDateFilter(getTabData()).filter(c => {
         const q = search.toLowerCase();
         return (
             c.bookTitle.toLowerCase().includes(q) ||
@@ -77,6 +92,12 @@ const Circulation = () => {
             c.accessionNumber.toLowerCase().includes(q)
         );
     });
+
+    const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
+    const paginatedResults = filtered.slice(
+        (currentPage - 1) * ROWS_PER_PAGE,
+        currentPage * ROWS_PER_PAGE
+    );
 
     const isOverdue = (dueDate) => new Date(dueDate) < new Date();
 
@@ -141,7 +162,8 @@ const Circulation = () => {
                     {tabs.map((tab) => (
                         <button
                             key={tab.key}
-                            onClick={() => { setActiveTab(tab.key); setSearch(''); }}
+                            onClick={() => { setActiveTab(tab.key); setSearch(''); setCurrentPage(1); }}
+                            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all
                                 ${activeTab === tab.key
                                     ? 'bg-accent text-primary'
@@ -156,6 +178,39 @@ const Circulation = () => {
                             )}
                         </button>
                     ))}
+                </div>
+
+                {/* Date Filter */}
+                <div className="flex gap-2">
+                    <select
+                        value={selectedMonth ? selectedMonth.split('-')[1] : ''}
+                        onChange={(e) => {
+                            const year = selectedMonth?.split('-')[0] || new Date().getFullYear();
+                            setSelectedMonth(e.target.value ? `${year}-${e.target.value}` : '');
+                            setCurrentPage(1);
+                        }}
+                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm"
+                    >
+                        <option value="">All Months</option>
+                        {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+                            .map((m, i) => (
+                                <option key={i} value={String(i + 1).padStart(2, '0')}>{m}</option>
+                            ))}
+                    </select>
+                    <select
+                        value={selectedMonth ? selectedMonth.split('-')[0] : ''}
+                        onChange={(e) => {
+                            const month = selectedMonth?.split('-')[1] || '';
+                            setSelectedMonth(e.target.value ? (month ? `${e.target.value}-${month}` : `${e.target.value}`) : '');
+                            setCurrentPage(1);
+                        }}
+                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm"
+                    >
+                        <option value="">All Years</option>
+                        {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                            <option key={y} value={y}>{y}</option>
+                        ))}
+                    </select>
                 </div>
 
                 {/* Search */}
@@ -174,9 +229,63 @@ const Circulation = () => {
                 <Card title={`${tabs.find(t => t.key === activeTab)?.label} Records (${filtered.length})`}>
                     <Table
                         columns={columns}
-                        data={filtered}
+                        data={paginatedResults}
                         emptyMessage="No circulation records found"
                     />
+
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                            <p className="text-text-secondary text-xs">
+                                Showing {(currentPage - 1) * ROWS_PER_PAGE + 1}–{Math.min(currentPage * ROWS_PER_PAGE, filtered.length)} of {filtered.length}
+                            </p>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setCurrentPage(p => p - 1)}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1.5 text-xs rounded-lg border border-border text-text-primary hover:border-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Previous
+                                </button>
+
+                                {(() => {
+                                    const pages = [];
+                                    const addPage = (page) => pages.push(
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${page === currentPage
+                                                    ? 'bg-accent text-primary border-accent font-semibold'
+                                                    : 'border-border text-text-primary hover:border-accent'
+                                                }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    );
+                                    const addDots = (key) => pages.push(
+                                        <span key={key} className="px-2 py-1.5 text-xs text-text-secondary">...</span>
+                                    );
+                                    if (totalPages <= 5) {
+                                        for (let i = 1; i <= totalPages; i++) addPage(i);
+                                    } else {
+                                        addPage(1);
+                                        if (currentPage > 3) addDots('dots-start');
+                                        for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) addPage(i);
+                                        if (currentPage < totalPages - 2) addDots('dots-end');
+                                        addPage(totalPages);
+                                    }
+                                    return pages;
+                                })()}
+
+                                <button
+                                    onClick={() => setCurrentPage(p => p + 1)}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1.5 text-xs rounded-lg border border-border text-text-primary hover:border-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </Card>
 
             </div>

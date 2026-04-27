@@ -130,24 +130,25 @@ public class CirculationService {
         );
 
         if (returnDate.isAfter(circulation.getDueDate())) {
-            long daysOverdue = returnDate.toEpochDay() - circulation.getDueDate().toEpochDay();
-            double finePerDay = systemConfigService.getFinePerDay();
-            double fineAmount = daysOverdue * finePerDay;
+            if (systemConfigService.isFineSystemEnabled()) {
+                long daysOverdue = returnDate.toEpochDay() - circulation.getDueDate().toEpochDay();
+                double finePerDay = systemConfigService.getFinePerDay();
+                double fineAmount = daysOverdue * finePerDay;
 
-            Fine fine = new Fine();
-            fine.setCirculation(circulation);
-            fine.setAmount(BigDecimal.valueOf(fineAmount));
-            fine.setStatus("pending");
-            fineRepository.save(fine);
+                Fine fine = new Fine();
+                fine.setCirculation(circulation);
+                fine.setAmount(BigDecimal.valueOf(fineAmount));
+                fine.setStatus("pending");
+                fineRepository.save(fine);
 
-
-            if (emailService != null){
-                emailService.sendFineEmail(
-                    circulation.getUser().getEmail(),
-                    circulation.getUser().getName(),
-                    copy.getBook().getTitle(),
-                    fineAmount
-                );
+                if (emailService != null) {
+                    emailService.sendFineEmail(
+                        circulation.getUser().getEmail(),
+                        circulation.getUser().getName(),
+                        copy.getBook().getTitle(),
+                        fineAmount
+                    );
+                }
             }
         }
 
