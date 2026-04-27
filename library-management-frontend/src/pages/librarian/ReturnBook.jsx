@@ -20,6 +20,7 @@ const ReturnBook = () => {
     const [search, setSearch] = useState('');
     const [selectedBook, setSelectedBook] = useState(null);
     const [showBookModal, setShowBookModal] = useState(false);
+    const [selectedMonth, setSelectedMonth] = useState('');
 
     const fetchIssued = async () => {
         try {
@@ -37,13 +38,26 @@ const ReturnBook = () => {
 
     useEffect(() => {
         const q = search.toLowerCase();
-        setFiltered(circulations.filter(c =>
+        let result = circulations.filter(c =>
             c.bookTitle.toLowerCase().includes(q) ||
             c.userName.toLowerCase().includes(q) ||
             c.staffNumber.toLowerCase().includes(q) ||
             c.accessionNumber.toLowerCase().includes(q)
-        ));
-    }, [search, circulations]);
+        );
+
+        if (selectedMonth) {
+            const parts = selectedMonth.split('-');
+            const year = Number(parts[0]);
+            const month = parts[1] ? Number(parts[1]) : null;
+            result = result.filter(c => {
+                const d = new Date(c.issueDate);
+                if (month) return d.getFullYear() === year && (d.getMonth() + 1) === month;
+                return d.getFullYear() === year;
+            });
+        }
+
+        setFiltered(result);
+    }, [search, circulations, selectedMonth]);
 
     const handleViewBook = async (bookId) => {
         try {
@@ -168,6 +182,37 @@ const ReturnBook = () => {
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full bg-surface border border-border text-text-primary rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-accent placeholder:text-text-secondary"
                     />
+                </div>
+
+                {/* Issue Date Filter */}
+                <div className="flex gap-2">
+                    <select
+                        value={selectedMonth ? selectedMonth.split('-')[1] : ''}
+                        onChange={(e) => {
+                            const year = selectedMonth?.split('-')[0] || new Date().getFullYear();
+                            setSelectedMonth(e.target.value ? `${year}-${e.target.value}` : '');
+                        }}
+                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm"
+                    >
+                        <option value="">All Months</option>
+                        {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+                            .map((m, i) => (
+                                <option key={i} value={String(i + 1).padStart(2, '0')}>{m}</option>
+                            ))}
+                    </select>
+                    <select
+                        value={selectedMonth ? selectedMonth.split('-')[0] : ''}
+                        onChange={(e) => {
+                            const month = selectedMonth?.split('-')[1] || '';
+                            setSelectedMonth(e.target.value ? (month ? `${e.target.value}-${month}` : `${e.target.value}`) : '');
+                        }}
+                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm"
+                    >
+                        <option value="">All Years</option>
+                        {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                            <option key={y} value={y}>{y}</option>
+                        ))}
+                    </select>
                 </div>
 
                 {/* Table */}

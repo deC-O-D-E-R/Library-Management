@@ -25,6 +25,7 @@ const Reservations = () => {
     const [search, setSearch] = useState('');
     const [fulfilling, setFulfilling] = useState(null);
     const [error, setError] = useState('');
+    const [selectedMonth, setSelectedMonth] = useState('');
 
     const fetchData = async () => {
         try {
@@ -48,7 +49,20 @@ const Reservations = () => {
         return all.filter(r => r.status === activeTab);
     };
 
-    const filtered = getTabData().filter(r => {
+    const applyDateFilter = (rows) => {
+        if (!selectedMonth || !rows) return rows;
+        const parts = selectedMonth.split('-');
+        const year = Number(parts[0]);
+        const month = parts[1] ? Number(parts[1]) : null;
+        return rows.filter(r => {
+            if (!r.reservedAt) return false;
+            const d = new Date(r.reservedAt);
+            if (month) return d.getFullYear() === year && (d.getMonth() + 1) === month;
+            return d.getFullYear() === year;
+        });
+    };
+
+    const filtered = applyDateFilter(getTabData()).filter(r => {
         const q = search.toLowerCase();
         return (
             r.bookTitle.toLowerCase().includes(q) ||
@@ -153,6 +167,37 @@ const Reservations = () => {
                             )}
                         </button>
                     ))}
+                </div>
+
+                {/* Reserved Date Filter */}
+                <div className="flex gap-2">
+                    <select
+                        value={selectedMonth ? selectedMonth.split('-')[1] : ''}
+                        onChange={(e) => {
+                            const year = selectedMonth?.split('-')[0] || new Date().getFullYear();
+                            setSelectedMonth(e.target.value ? `${year}-${e.target.value}` : '');
+                        }}
+                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm"
+                    >
+                        <option value="">All Months</option>
+                        {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+                            .map((m, i) => (
+                                <option key={i} value={String(i + 1).padStart(2, '0')}>{m}</option>
+                            ))}
+                    </select>
+                    <select
+                        value={selectedMonth ? selectedMonth.split('-')[0] : ''}
+                        onChange={(e) => {
+                            const month = selectedMonth?.split('-')[1] || '';
+                            setSelectedMonth(e.target.value ? (month ? `${e.target.value}-${month}` : `${e.target.value}`) : '');
+                        }}
+                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm"
+                    >
+                        <option value="">All Years</option>
+                        {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                            <option key={y} value={y}>{y}</option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="relative">
