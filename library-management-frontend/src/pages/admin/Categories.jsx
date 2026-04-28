@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Pencil } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
@@ -7,7 +7,7 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import Loader from '../../components/ui/Loader';
-import { getAllCategories, addCategory, deleteCategory } from '../../api/adminApi';
+import { getAllCategories, addCategory, updateCategory } from '../../api/adminApi';
 
 const AdminCategories = () => {
     const [categories, setCategories] = useState([]);
@@ -16,6 +16,7 @@ const AdminCategories = () => {
     const [name, setName] = useState('');
     const [error, setError] = useState('');
     const [saving, setSaving] = useState(false);
+    const [editId, setEditId] = useState(null);
 
     const fetchCategories = async () => {
         try {
@@ -35,27 +36,24 @@ const AdminCategories = () => {
             setError('Category name is required');
             return;
         }
+
         setSaving(true);
         try {
-            await addCategory({ name: name.trim() });
+            if (editId) {
+                await updateCategory(editId, { name: name.trim() });
+            } else {
+                await addCategory({ name: name.trim() });
+            }
+
             setShowModal(false);
             setName('');
+            setEditId(null);
             setError('');
             fetchCategories();
         } catch (err) {
             setError(err.response?.data || 'Something went wrong');
         } finally {
             setSaving(false);
-        }
-    };
-
-    const handleDelete = async (categoryId) => {
-        if (!window.confirm('Delete this category? Books under this category may be affected.')) return;
-        try {
-            await deleteCategory(categoryId);
-            fetchCategories();
-        } catch (err) {
-            alert(err.response?.data || 'Cannot delete category');
         }
     };
 
@@ -66,10 +64,16 @@ const AdminCategories = () => {
             header: 'Actions',
             render: (row) => (
                 <button
-                    onClick={() => handleDelete(row.categoryId)}
-                    className="text-text-secondary hover:text-danger transition-colors"
+                    onClick={() => {
+                        setEditId(row.categoryId);
+                        setName(row.name);
+                        setError('');
+                        setShowModal(true);
+                    }}
+                    className="flex items-center gap-1 text-text-secondary hover:text-accent transition-colors"
                 >
-                    <Trash2 size={15} />
+                    <span>Edit</span>
+                    <Pencil size={15} />
                 </button>
             )
         }
@@ -88,7 +92,7 @@ const AdminCategories = () => {
                             Manage book categories
                         </p>
                     </div>
-                    <Button onClick={() => { setName(''); setError(''); setShowModal(true); }}>
+                    <Button onClick={() => { setName(''); setError(''); setEditId(null); setShowModal(true); }}>
                         <Plus size={15} /> Add Category
                     </Button>
                 </div>
@@ -106,7 +110,7 @@ const AdminCategories = () => {
             <Modal
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
-                title="Add Category"
+                title={editId ? "Edit Category" : "Add Category"}
                 size="sm"
             >
                 <div className="flex flex-col gap-4">
@@ -121,7 +125,11 @@ const AdminCategories = () => {
                     <div className="flex justify-end gap-3">
                         <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
                         <Button onClick={handleSubmit} disabled={saving}>
-                            {saving ? 'Saving...' : 'Add Category'}
+                            {saving
+                                ? 'Saving...'
+                                : editId
+                                    ? 'Update Category'
+                                    : 'Add Category'}
                         </Button>
                     </div>
                 </div>

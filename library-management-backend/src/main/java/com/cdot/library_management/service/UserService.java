@@ -308,8 +308,8 @@ public class UserService {
                 totalRows++;
 
                 try {
-                    String[] cols = new String[9];
-                    for (int i = 0; i < 9; i++) {
+                    String[] cols = new String[8];
+                    for (int i = 0; i < 8; i++) {
                         cols[i] = row.getCell(i) != null
                                 ? formatter.formatCellValue(row.getCell(i)) : "";
                     }
@@ -349,25 +349,30 @@ public class UserService {
 
     private UserRequestDTO mapColumnsToDTO(String[] cols, int rowNum) {
 
-        if (cols.length < 6) {
+        if (cols.length < 5) {
             throw new RuntimeException("Row " + rowNum + " has insufficient columns");
         }
 
         UserRequestDTO dto = new UserRequestDTO();
         dto.setName(cols[0].trim());
         dto.setStaffNumber(cols[1].trim());
-        dto.setPassword(cols[2].trim());
-        dto.setDesignation(cols[3].trim());
-        dto.setEmail(cols[4].trim());
-        dto.setDateOfJoining(parseDate(cols[5]));
+        dto.setPassword(cols[1].trim());
+        dto.setDesignation(cols[2].trim());
+        dto.setEmail(cols[3].trim());
+        dto.setDateOfJoining(parseDate(cols[4]));
         dto.setDateOfSuperannuation(
+            cols.length > 5 ? parseDate(cols[5]) : null
+        );
+
+        dto.setDateOfResignation(
             cols.length > 6 ? parseDate(cols[6]) : null
         );
-        dto.setDateOfResignation(
-            cols.length > 7 ? parseDate(cols[7]) : null
+
+        dto.setRoles(
+            cols.length > 7 && !cols[7].trim().isEmpty()
+                ? List.of(cols[7].trim().split(";"))
+                : List.of("EMPLOYEE")
         );
-        dto.setRoles(cols.length > 8 && !cols[8].trim().isEmpty()
-                ? List.of(cols[8].trim().split(";")) : List.of("EMPLOYEE"));
 
         return dto;
     }

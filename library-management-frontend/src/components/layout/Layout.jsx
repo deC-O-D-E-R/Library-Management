@@ -1,8 +1,20 @@
+import useAutoLogout from '../../hooks/useAutoLogout';
+import useAuth from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
 
 const Layout = ({ children }) => {
+
+    const { logout } = useAuth();
+    const navigate = useNavigate();
+
+    useAutoLogout(() => {
+        logout();
+        navigate('/login');
+    });
+
     return (
         <div className="h-screen flex flex-col bg-primary overflow-hidden">
             <Navbar />

@@ -41,8 +41,8 @@ export const getAllCategories = () =>
 export const addCategory = (data) =>
     axiosInstance.post('/admin/categories', data);
 
-export const deleteCategory = (categoryId) =>
-    axiosInstance.delete(`/admin/categories/${categoryId}`);
+export const updateCategory = (id, data) =>
+  axiosInstance.put(`/admin/categories/${id}`, data);
 
 //books
 export const getAllBooks = () =>
@@ -62,9 +62,6 @@ export const addBook = (data) =>
 
 export const editBook = (bookId, data) =>
     axiosInstance.put(`/admin/books/${bookId}`, data);
-
-export const deleteBook = (bookId) =>
-    axiosInstance.delete(`/admin/books/${bookId}`);
 
 export const addCopy = (bookId, accessionNumber) =>
     axiosInstance.post(`/admin/books/${bookId}/copies`, null, {

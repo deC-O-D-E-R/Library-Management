@@ -9,7 +9,7 @@ import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import Loader from '../../components/ui/Loader';
 import {
-    getAllBooks, addBook, editBook, deleteBook,
+    getAllBooks, addBook, editBook,
     getAllCategories, bulkUploadBooks, addCopy, deleteCopy
 } from '../../api/adminApi';
 import { formatCurrency } from '../../utils/helpers';
@@ -132,16 +132,6 @@ const AdminBooks = () => {
         }
     };
 
-    const handleDelete = async (bookId) => {
-        if (!window.confirm('Are you sure you want to delete this book?')) return;
-        try {
-            await deleteBook(bookId);
-            fetchData();
-        } catch (err) {
-            alert(err.response?.data || 'Cannot delete book');
-        }
-    };
-
     const handleAddCopy = async () => {
         if (!newAccession.trim()) return;
         try {
@@ -216,11 +206,12 @@ const AdminBooks = () => {
             header: 'Actions',
             render: (row) => (
                 <div className="flex gap-2">
-                    <button onClick={() => openEdit(row)} className="text-text-secondary hover:text-accent transition-colors">
+                    <button
+                        onClick={() => openEdit(row)}
+                        className="flex items-center gap-1 text-text-secondary hover:text-accent transition-colors"
+                    >
+                        <span>Edit</span>
                         <Pencil size={15} />
-                    </button>
-                    <button onClick={() => handleDelete(row.bookId)} className="text-text-secondary hover:text-danger transition-colors">
-                        <Trash2 size={15} />
                     </button>
                 </div>
             )
@@ -293,8 +284,8 @@ const AdminBooks = () => {
                                             key={page}
                                             onClick={() => setCurrentPage(page)}
                                             className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${page === currentPage
-                                                    ? 'bg-accent text-primary border-accent font-semibold'
-                                                    : 'border-border text-text-primary hover:border-accent'
+                                                ? 'bg-accent text-primary border-accent font-semibold'
+                                                : 'border-border text-text-primary hover:border-accent'
                                                 }`}
                                         >
                                             {page}

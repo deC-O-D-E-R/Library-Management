@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BarChart3, Users, BookOpen, AlertTriangle, PackageSearch } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -28,7 +28,7 @@ const reportTabs = [
 ];
 
 // tabs where date filter is not applicable
-const NO_DATE_FILTER = ['holding', 'stock'];
+const NO_DATE_FILTER = ['holding', 'stock', 'inventory'];
 
 const AdminReports = () => {
     const [activeTab, setActiveTab] = useState('circulation');
@@ -41,6 +41,17 @@ const AdminReports = () => {
     const [showBookModal, setShowBookModal] = useState(false);
     const [fromDate, setFromDate] = useState('');
     const [toDate, setToDate] = useState('');
+
+    const [invFromDate, setInvFromDate] = useState('');
+    const [invToDate, setInvToDate] = useState('');
+    const [invFilters, setInvFilters] = useState({ callNo: true, accNo: false, price: false });
+    const [invSort, setInvSort] = useState('callNo');
+
+    useEffect(() => {
+        if (activeTab === 'inventory') {
+            fetchReport();
+        }
+    }, [activeTab]);
 
     const fetchReport = async () => {
         setLoading(true);
@@ -89,12 +100,11 @@ const AdminReports = () => {
         switch (activeTab) {
             case 'circulation': return applyDateFilter(data, 'issueDate');
             case 'overdue': return applyDateFilter(data, 'dueDate');
-            case 'inventory': return applyDateFilter(data, 'receiptDate');
             case 'user': return {
                 ...data,
                 circulationHistory: applyDateFilter(data.circulationHistory || [], 'issueDate'),
             };
-            default: return data; // inventory, holding, stock — no date filter
+            default: return data; // inventory, holding, stock (no date filter)
         }
     };
 
@@ -107,11 +117,104 @@ const AdminReports = () => {
         ? `${fromDate || '...'} to ${toDate || '...'}`
         : 'All Time';
 
+
+    // ─── Inventory Data Preparation ───────────────────────────────────────
+    const getInventoryRows = () => {
+        if (!data) return { rows: [], summary: null };
+
+        // Apply date filter
+        let books = data;
+        if (invFromDate || invToDate) {
+            const from = invFromDate ? new Date(invFromDate) : null;
+            const to = invToDate ? new Date(invToDate + 'T23:59:59') : null;
+            books = books.filter(b => {
+                if (!b.receiptDate) return false;
+                const d = new Date(b.receiptDate);
+                if (from && d < from) return false;
+                if (to && d > to) return false;
+                return true;
+            });
+        }
+
+        const useAccNo = invFilters.accNo;
+        const useCallNo = invFilters.callNo || (!invFilters.accNo && !invFilters.callNo); // default to callNo
+        const usePrice = invFilters.price;
+
+        // Build rows
+        let rows = [];
+
+        if (useAccNo) {
+            // One row per copy
+            books.forEach(book => {
+                (book.copies || []).forEach(copy => {
+                    const row = {
+                        title: book.title,
+                        author: book.author,
+                        accNo: copy.accessionNumber,
+                        callNo: book.callNumber,
+                        status: copy.status,
+                        price: book.price,
+                    };
+                    rows.push(row);
+                });
+            });
+        } else {
+            // One row per book
+            books.forEach(book => {
+                rows.push({
+                    title: book.title,
+                    author: book.author,
+                    callNo: book.callNumber,
+                    totalCopies: book.totalCopies,
+                    available: book.availableCopies,
+                    issued: book.issuedCopies,
+                    missing: book.missingDamagedCopies,
+                    price: book.price,
+                });
+            });
+        }
+
+        // Sort
+        rows.sort((a, b) => {
+            if (invSort === 'accNo' && useAccNo) {
+                return (a.accNo || '').localeCompare(b.accNo || '');
+            }
+            if (invSort === 'price' && usePrice) {
+                return (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0);
+            }
+            return (a.callNo || '').localeCompare(b.callNo || ''); // default callNo
+        });
+
+        // Summary
+        const totalTitles = books.length;
+        const totalCopies = books.reduce((s, b) => s + b.totalCopies, 0);
+        const totalAvailable = books.reduce((s, b) => s + b.availableCopies, 0);
+        const totalIssued = books.reduce((s, b) => s + b.issuedCopies, 0);
+        const totalMissing = books.reduce((s, b) => s + b.missingDamagedCopies, 0);
+        const totalValue = usePrice
+            ? books.reduce((s, b) => s + (parseFloat(b.price) || 0) * b.totalCopies, 0)
+            : null;
+
+        return {
+            rows,
+            useAccNo,
+            useCallNo,
+            usePrice,
+            summary: { totalTitles, totalCopies, totalAvailable, totalIssued, totalMissing, totalValue }
+        };
+    };
+
+
     // ─── PDF Download ─────────────────────────────────────────────────────
     const handleDownloadPDF = () => {
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         const title = reportTabs.find(t => t.key === activeTab)?.label + ' Report';
-        const generated = `Generated: ${new Date().toLocaleString()} | Period: ${monthLabel}`;
+        const invDateLabel = invFromDate || invToDate
+            ? `${invFromDate || '...'} to ${invToDate || '...'}`
+            : 'All Time';
+
+        const generated = `Generated: ${new Date().toLocaleString()} | Period: ${activeTab === 'inventory' ? invDateLabel : monthLabel
+            }`;
 
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
@@ -155,14 +258,6 @@ const AdminReports = () => {
                     body: d.map(r => [
                         r.bookTitle, r.userName, r.staffNumber,
                         fmt(r.issueDate), fmt(r.dueDate), fmt(r.returnDate), r.status
-                    ]),
-                },
-                inventory: {
-                    subtitle: `Total Books: ${d.length}`,
-                    head: [['Title', 'Author', 'Category', 'Call No.', 'Total', 'Available', 'Issued', 'Missing']],
-                    body: [...d].sort((a, b) => a.callNumber?.localeCompare(b.callNumber)).map(r => [  // ← ADD sort
-                        r.title, r.author, r.categoryName, r.callNumber,
-                        r.totalCopies, r.availableCopies, r.issuedCopies, r.missingDamagedCopies
                     ]),
                 },
                 holding: {
@@ -273,6 +368,76 @@ const AdminReports = () => {
                 ]),
                 ...tableStyle,
             });
+        } else if (activeTab === 'inventory') {
+            const { rows, useAccNo, useCallNo, usePrice, summary } = getInventoryRows();
+
+            const dateLabel = invFromDate || invToDate
+                ? `${invFromDate || '...'} to ${invToDate || '...'}`
+                : 'All Time';
+
+            doc.setFontSize(9);
+            doc.setTextColor(80);
+            doc.text(`Receipt Date: ${dateLabel} | Total Titles: ${summary.totalTitles} | Total Copies: ${summary.totalCopies}`, 14, startY);
+            doc.setTextColor(0);
+            startY += 6;
+
+            // Build head and body based on filters
+            let head, body;
+
+            if (useAccNo && useCallNo) {
+                head = [['Title', 'Author', 'Acc No.', 'Call No.', 'Status', ...(usePrice ? ['Price'] : [])]];
+                body = rows.map(r => [
+                    r.title, r.author, r.accNo, r.callNo, r.status,
+                    ...(usePrice ? [`₹${parseFloat(r.price || 0).toFixed(2)}`] : [])
+                ]);
+            } else if (useAccNo) {
+                head = [['Title', 'Author', 'Acc No.', 'Status', ...(usePrice ? ['Price'] : [])]];
+                body = rows.map(r => [
+                    r.title, r.author, r.accNo, r.status,
+                    ...(usePrice ? [`₹${parseFloat(r.price || 0).toFixed(2)}`] : [])
+                ]);
+            } else {
+                // callNo only or neither (defaults to callNo)
+                head = [['Title', 'Author', 'Call No.', 'Total', 'Available', 'Issued', 'Missing', ...(usePrice ? ['Price'] : [])]];
+                body = rows.map(r => [
+                    r.title, r.author, r.callNo,
+                    r.totalCopies, r.available, r.issued, r.missing,
+                    ...(usePrice ? [`₹${parseFloat(r.price || 0).toFixed(2)}`] : [])
+                ]);
+            }
+
+            autoTable(doc, { startY, head, body, ...tableStyle });
+
+            // Summary block
+            const finalY = doc.lastAutoTable.finalY + 8;
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0);
+
+            const summaryItems = [
+                ['Total Titles', summary.totalTitles],
+                ['Total Copies', summary.totalCopies],
+                ['Available', summary.totalAvailable],
+                ['Issued', summary.totalIssued],
+                ['Missing/Damaged', summary.totalMissing],
+                ...(usePrice ? [['Total Collection Value', `₹${summary.totalValue.toFixed(2)}`]] : []),
+            ];
+
+            summaryItems.forEach(([label, value], i) => {
+                const x = 14 + i * 32;
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(10);
+                doc.text(String(value), x, finalY + 5);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8);
+                doc.setTextColor(120);
+                doc.text(label, x, finalY + 9);
+                doc.setTextColor(0);
+            });
+
+            doc.save(`Inventory_Report_${dateLabel.replace(/\s+/g, '_')}.pdf`);
+            return
+
         } else {
             const cfg = configs[activeTab];
             doc.setFontSize(9);
@@ -302,12 +467,46 @@ const AdminReports = () => {
                 'Issue Date': fmt(r.issueDate), 'Due Date': fmt(r.dueDate),
                 'Return Date': fmt(r.returnDate), 'Status': r.status,
             })),
-            inventory: () => [...d].sort((a, b) => a.callNumber?.localeCompare(b.callNumber)).map(r => ({  // ← ADD sort
-                'Title': r.title, 'Author': r.author, 'Category': r.categoryName,
-                'Call No.': r.callNumber, 'Total': r.totalCopies,
-                'Available': r.availableCopies, 'Issued': r.issuedCopies,
-                'Missing/Damaged': r.missingDamagedCopies,
-            })),
+            inventory: () => {
+                const { rows, useAccNo, useCallNo, usePrice, summary } = getInventoryRows();
+
+                const dataRows = rows.map(r => {
+                    if (useAccNo && useCallNo) {
+                        return {
+                            'Title': r.title, 'Author': r.author,
+                            'Acc No.': r.accNo, 'Call No.': r.callNo, 'Status': r.status,
+                            ...(usePrice ? { 'Price (₹)': parseFloat(r.price || 0).toFixed(2) } : {})
+                        };
+                    } else if (useAccNo) {
+                        return {
+                            'Title': r.title, 'Author': r.author,
+                            'Acc No.': r.accNo, 'Status': r.status,
+                            ...(usePrice ? { 'Price (₹)': parseFloat(r.price || 0).toFixed(2) } : {})
+                        };
+                    } else {
+                        return {
+                            'Title': r.title, 'Author': r.author, 'Call No.': r.callNo,
+                            'Total': r.totalCopies, 'Available': r.available,
+                            'Issued': r.issued, 'Missing/Damaged': r.missing,
+                            ...(usePrice ? { 'Price (₹)': parseFloat(r.price || 0).toFixed(2) } : {})
+                        };
+                    }
+                });
+
+                //summary
+                dataRows.push({});
+                dataRows.push({ 'Title': '— SUMMARY —' });
+                dataRows.push({ 'Title': 'Total Titles', 'Author': summary.totalTitles });
+                dataRows.push({ 'Title': 'Total Copies', 'Author': summary.totalCopies });
+                dataRows.push({ 'Title': 'Available', 'Author': summary.totalAvailable });
+                dataRows.push({ 'Title': 'Issued', 'Author': summary.totalIssued });
+                dataRows.push({ 'Title': 'Missing/Damaged', 'Author': summary.totalMissing });
+                if (usePrice) {
+                    dataRows.push({ 'Title': 'Total Collection Value (₹)', 'Author': summary.totalValue.toFixed(2) });
+                }
+
+                return dataRows;
+            },
             holding: () => d.map(r => ({
                 'Category': r.categoryName, 'Titles': r.totalBooks,
                 'Total Copies': r.totalCopies, 'Available': r.available,
@@ -331,7 +530,12 @@ const AdminReports = () => {
         const ws = XLSX.utils.json_to_sheet(rows);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, title);
-        XLSX.writeFile(wb, `${title?.replace(/\s+/g, '_')}_${monthLabel.replace(/\s+/g, '_')}.xlsx`);
+
+        const dateLabel = activeTab === 'inventory'
+            ? (invFromDate || invToDate ? `${invFromDate || '...'}_to_${invToDate || '...'}` : 'All_Time')
+            : monthLabel;
+
+        XLSX.writeFile(wb, `${title?.replace(/\s+/g, '_')}_${dateLabel.replace(/\s+/g, '_')}.xlsx`);
     };
 
     // ─── Table Columns ────────────────────────────────────────────────────
@@ -343,27 +547,6 @@ const AdminReports = () => {
         { header: 'Due Date', render: (row) => formatDate(row.dueDate) },
         { header: 'Return Date', render: (row) => formatDate(row.returnDate) },
         { header: 'Status', render: (row) => <Badge text={row.status} /> },
-    ];
-
-    const inventoryColumns = [
-        {
-            header: 'Title',
-            render: (row) => (
-                <button
-                    onClick={() => handleViewBook(row.bookId)}
-                    className="hover:underline text-left font-medium"
-                >
-                    {row.title}
-                </button>
-            )
-        },
-        { header: 'Author', key: 'author' },
-        { header: 'Category', key: 'categoryName' },
-        { header: 'Call No.', key: 'callNumber' },
-        { header: 'Total', render: (row) => row.totalCopies },
-        { header: 'Available', render: (row) => <span className="text-success">{row.availableCopies}</span> },
-        { header: 'Issued', render: (row) => <span className="text-warning">{row.issuedCopies}</span> },
-        { header: 'Missing', render: (row) => <span className="text-danger">{row.missingDamagedCopies}</span> },
     ];
 
     const holdingColumns = [
@@ -501,9 +684,11 @@ const AdminReports = () => {
                             </div>
                         )}
 
-                        <Button onClick={fetchReport} disabled={loading}>
-                            {loading ? 'Loading...' : 'Generate Report'}
-                        </Button>
+                        {activeTab !== 'inventory' && (
+                            <Button onClick={fetchReport} disabled={loading}>
+                                {loading ? 'Loading...' : 'Generate Report'}
+                            </Button>
+                        )}
 
                     </div>
                 </Card>
@@ -512,17 +697,22 @@ const AdminReports = () => {
                 {loading && <Loader />}
 
                 {filteredData && !loading && (
-                    <Card title={`${reportTabs.find(t => t.key === activeTab)?.label} Report — ${monthLabel}`}>
+                    <Card title={`${reportTabs.find(t => t.key === activeTab)?.label} Report${activeTab === 'inventory'
+                        ? ` — ${invFromDate || invToDate ? `${invFromDate || '...'} to ${invToDate || '...'}` : 'All Time'}`
+                        : ` — ${monthLabel}`
+                        }`}>
 
                         {/* Download Buttons */}
-                        <div className="flex gap-2 mb-4">
-                            <Button size="sm" onClick={handleDownloadPDF}>
-                                Download PDF
-                            </Button>
-                            <Button size="sm" variant="secondary" onClick={handleDownloadExcel}>
-                                Download Excel
-                            </Button>
-                        </div>
+                        {activeTab !== 'inventory' && (
+                            <div className="flex gap-2 mb-4">
+                                <Button size="sm" onClick={handleDownloadPDF}>
+                                    Download PDF
+                                </Button>
+                                <Button size="sm" variant="secondary" onClick={handleDownloadExcel}>
+                                    Download Excel
+                                </Button>
+                            </div>
+                        )}
 
                         {/* Circulation */}
                         {activeTab === 'circulation' && (
@@ -551,14 +741,92 @@ const AdminReports = () => {
                             </div>
                         )}
 
-                        {/* Inventory */}
+                        {/* Inventory Export Panel */}
                         {activeTab === 'inventory' && (
-                            <Table
-                                columns={inventoryColumns}
-                                data={[...filteredData].sort((a, b) => a.callNumber?.localeCompare(b.callNumber))}
-                                emptyMessage="No books found"
-                            />
+                            <div className="flex flex-col gap-5">
+
+                                {/* Receipt Date Range */}
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Receipt Date Range</span>
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="date"
+                                            value={invFromDate}
+                                            onChange={(e) => setInvFromDate(e.target.value)}
+                                            className="bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
+                                        />
+                                        <span className="text-text-secondary text-sm">to</span>
+                                        <input
+                                            type="date"
+                                            value={invToDate}
+                                            onChange={(e) => setInvToDate(e.target.value)}
+                                            className="bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="h-px bg-border" />
+
+                                {/* Include Columns */}
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Include Columns</span>
+                                    <div className="flex gap-6">
+                                        {[
+                                            { key: 'callNo', label: 'Call Number' },
+                                            { key: 'accNo', label: 'Accession No.' },
+                                            { key: 'price', label: 'Price' },
+                                        ].map(({ key, label }) => (
+                                            <label key={key} className="flex items-center gap-2 text-text-primary text-sm cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={invFilters[key]}
+                                                    onChange={(e) => setInvFilters({ ...invFilters, [key]: e.target.checked })}
+                                                    className="accent-accent w-4 h-4"
+                                                />
+                                                {label}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="h-px bg-border" />
+
+                                {/* Sort Order */}
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Sort By</span>
+                                    <div className="flex gap-6">
+                                        {[
+                                            { value: 'callNo', label: 'Call No.', disabled: false },
+                                            { value: 'accNo', label: 'Acc No.', disabled: !invFilters.accNo },
+                                            { value: 'price', label: 'Price', disabled: !invFilters.price },
+                                        ].map(({ value, label, disabled }) => (
+                                            <label key={value} className={`flex items-center gap-2 text-sm ${disabled ? 'text-text-secondary opacity-40 cursor-not-allowed' : 'text-text-primary cursor-pointer'}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="invSort"
+                                                    value={value}
+                                                    checked={invSort === value}
+                                                    onChange={() => !disabled && setInvSort(value)}
+                                                    disabled={disabled}
+                                                    className="accent-accent w-4 h-4"
+                                                />
+                                                {label}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="h-px bg-border" />
+
+                                {/* Download */}
+                                <div className="flex gap-3">
+                                    <Button onClick={handleDownloadPDF}>Download PDF</Button>
+                                    <Button variant="secondary" onClick={handleDownloadExcel}>Download Excel</Button>
+                                </div>
+
+                            </div>
                         )}
+
                         {/* Holding Summary */}
                         {activeTab === 'holding' && (
                             <Table

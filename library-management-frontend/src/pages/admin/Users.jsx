@@ -261,8 +261,8 @@ const AdminUsers = () => {
                 {!bulkResult ? (
                     <div className="flex flex-col gap-4">
                         <p className="text-text-secondary text-sm">
-                            Upload a CSV or Excel file with columns: name, staffNumber, password, designation,
-                            email, dateOfJoining, dateOfSuperannuation, dateOfResignation, roles
+                            Upload a CSV or Excel file with columns: name, staffNumber, designation, email, dateOfJoining, 
+                            dateOfSuperannuation, dateOfResignation, roles (default password = staffNumber)
                         </p>
 
                         <label
