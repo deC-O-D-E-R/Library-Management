@@ -20,13 +20,20 @@ const SearchBooks = () => {
     const [showModal, setShowModal] = useState(false);
     const [reserving, setReserving] = useState(false);
     const [reserveMessage, setReserveMessage] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const ROWS_PER_PAGE = 10;
 
     const handleSearch = async () => {
-        if (!query.trim()) return;
+        if (!query.trim() && searchType !== 'all') return;
         setLoading(true);
         setSearched(true);
+        setCurrentPage(1);
         try {
-            const params = { [searchType]: query.trim() };
+            const params = searchType === 'all' && !query.trim()
+                ? {}
+                : searchType === 'all'
+                    ? { title: query.trim(), author: query.trim(), isbn: query.trim(), callNumber: query.trim() }
+                    : { [searchType]: query.trim() };
             const res = await searchBooks(params);
             setResults(res.data);
         } catch (err) {
@@ -92,6 +99,12 @@ const SearchBooks = () => {
         }
     ];
 
+    const totalPages = Math.ceil(results.length / ROWS_PER_PAGE);
+    const paginatedResults = results.slice(
+        (currentPage - 1) * ROWS_PER_PAGE,
+        currentPage * ROWS_PER_PAGE
+    );
+
     return (
         <Layout>
             <div className="flex flex-col gap-6">
@@ -112,6 +125,7 @@ const SearchBooks = () => {
                             onChange={(e) => setSearchType(e.target.value)}
                             className="bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
                         >
+                            <option value="all">All</option>
                             <option value="title">Title</option>
                             <option value="author">Author</option>
                             <option value="isbn">ISBN</option>
@@ -145,9 +159,61 @@ const SearchBooks = () => {
                     <Card title={`Results (${results.length})`}>
                         <Table
                             columns={columns}
-                            data={results}
+                            data={paginatedResults}
                             emptyMessage="No books found matching your search"
                         />
+
+                        {totalPages > 1 && (
+                            <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                                <p className="text-text-secondary text-xs">
+                                    Showing {(currentPage - 1) * ROWS_PER_PAGE + 1}–{Math.min(currentPage * ROWS_PER_PAGE, results.length)} of {results.length}
+                                </p>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => setCurrentPage(p => p - 1)}
+                                        disabled={currentPage === 1}
+                                        className="px-3 py-1.5 text-xs rounded-lg border border-border text-text-primary hover:border-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Previous
+                                    </button>
+                                    {(() => {
+                                        const pages = [];
+                                        const addPage = (page) => pages.push(
+                                            <button
+                                                key={page}
+                                                onClick={() => setCurrentPage(page)}
+                                                className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${page === currentPage
+                                                        ? 'bg-accent text-primary border-accent font-semibold'
+                                                        : 'border-border text-text-primary hover:border-accent'
+                                                    }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        );
+                                        const addDots = (key) => pages.push(
+                                            <span key={key} className="px-2 py-1.5 text-xs text-text-secondary">...</span>
+                                        );
+                                        if (totalPages <= 5) {
+                                            for (let i = 1; i <= totalPages; i++) addPage(i);
+                                        } else {
+                                            addPage(1);
+                                            if (currentPage > 3) addDots('dots-start');
+                                            for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) addPage(i);
+                                            if (currentPage < totalPages - 2) addDots('dots-end');
+                                            addPage(totalPages);
+                                        }
+                                        return pages;
+                                    })()}
+                                    <button
+                                        onClick={() => setCurrentPage(p => p + 1)}
+                                        disabled={currentPage === totalPages}
+                                        className="px-3 py-1.5 text-xs rounded-lg border border-border text-text-primary hover:border-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </Card>
                 )}
 
@@ -197,10 +263,6 @@ const SearchBooks = () => {
                                 <p className="text-text-primary mt-1">{formatCurrency(selectedBook.price)}</p>
                             </div>
                             <div>
-                                <p className="text-text-secondary text-xs uppercase tracking-wider">Vendor</p>
-                                <p className="text-text-primary mt-1">{selectedBook.vendorName || '—'}</p>
-                            </div>
-                            <div>
                                 <p className="text-text-secondary text-xs uppercase tracking-wider">Receipt Date</p>
                                 <p className="text-text-primary mt-1">{formatDate(selectedBook.receiptDate)}</p>
                             </div>
@@ -240,8 +302,8 @@ const SearchBooks = () => {
                             <div className="flex flex-col gap-3 mt-2">
                                 {reserveMessage && (
                                     <div className={`rounded-lg px-4 py-3 text-sm ${reserveMessage.includes('successfully')
-                                            ? 'bg-green-900 bg-opacity-30 border border-success text-success'
-                                            : 'bg-red-900 bg-opacity-30 border border-danger text-danger'
+                                        ? 'bg-green-900 bg-opacity-30 border border-success text-success'
+                                        : 'bg-red-900 bg-opacity-30 border border-danger text-danger'
                                         }`}>
                                         {reserveMessage}
                                     </div>

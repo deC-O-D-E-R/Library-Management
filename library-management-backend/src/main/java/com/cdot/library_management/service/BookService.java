@@ -164,8 +164,8 @@ public class BookService {
             Map<Integer, BookResponseDTO> merged = new LinkedHashMap<>();
 
             if (isbn != null && !isbn.isBlank())
-                bookRepository.findByIsbn(isbn)
-                        .ifPresent(b -> merged.put(b.getBookId(), mapToResponseDTO(b)));
+                bookRepository.findByIsbnContainingIgnoreCase(isbn)
+                        .forEach(b -> merged.put(b.getBookId(), mapToResponseDTO(b)));
 
             if (title != null && !title.isBlank())
                 bookRepository.findByTitleContainingIgnoreCase(title)
@@ -184,9 +184,8 @@ public class BookService {
 
         //single-field search
         if (isbn != null && !isbn.isBlank())
-            return bookRepository.findByIsbn(isbn)
-                    .map(b -> List.of(mapToResponseDTO(b)))
-                    .orElse(List.of());
+            return bookRepository.findByIsbnContainingIgnoreCase(isbn)
+                    .stream().map(this::mapToResponseDTO).collect(Collectors.toList());
 
         if (title != null && !title.isBlank())
             return bookRepository.findByTitleContainingIgnoreCase(title)
