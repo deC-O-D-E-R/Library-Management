@@ -9,6 +9,8 @@ import AdminUsers from './pages/admin/Users';
 import AdminBooks from './pages/admin/Books';
 import AdminCategories from './pages/admin/Categories';
 import AdminReports from './pages/admin/Reports';
+import AdminFines from './pages/admin/Fines';
+import AdminStockVerification from './pages/admin/StockVerification';
 import AdminNotifications from './pages/admin/Notifications';
 import AdminConfig from './pages/admin/Config';
 
@@ -17,9 +19,7 @@ import SearchBooksLibrarian from './pages/librarian/SearchBooksLibrarian';
 import IssueBook from './pages/librarian/IssueBook';
 import ReturnBook from './pages/librarian/ReturnBook';
 import Circulation from './pages/librarian/Circulation';
-import Fines from './pages/librarian/Fines';
 import Reservations from './pages/librarian/Reservations';
-import StockVerification from './pages/librarian/StockVerification';
 
 import EmployeeDashboard from './pages/employee/Dashboard';
 import SearchBooks from './pages/employee/SearchBooks';
@@ -27,6 +27,7 @@ import MyBooks from './pages/employee/MyBooks';
 import MyReservations from './pages/employee/MyReservations';
 import MyFines from './pages/employee/MyFines';
 import BookRequestForm from './pages/employee/BookRequestForm';
+import Rules from './pages/employee/Rules';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
     const { user, token } = useAuth();
@@ -63,6 +64,8 @@ const AppRoutes = () => {
             <Route path="/admin/books" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminBooks /></ProtectedRoute>} />
             <Route path="/admin/categories" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminCategories /></ProtectedRoute>} />
             <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminReports /></ProtectedRoute>} />
+            <Route path="/admin/fines" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminFines /></ProtectedRoute>} />
+            <Route path="/admin/stock" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminStockVerification /></ProtectedRoute>} />
             <Route path="/admin/notifications" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminNotifications /></ProtectedRoute>} />
             <Route path="/admin/config" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminConfig /></ProtectedRoute>} />
 
@@ -73,8 +76,6 @@ const AppRoutes = () => {
             <Route path="/librarian/return" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><ReturnBook /></ProtectedRoute>} />
             <Route path="/librarian/circulation" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><Circulation /></ProtectedRoute>} />
             <Route path="/librarian/reservations" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><Reservations /></ProtectedRoute>} />
-            <Route path="/librarian/fines" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><Fines /></ProtectedRoute>} />
-            <Route path="/librarian/stock" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><StockVerification /></ProtectedRoute>} />
 
             {/* Employee Routes */}
             <Route path="/employee/dashboard" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN', 'EMPLOYEE']}><EmployeeDashboard /></ProtectedRoute>} />
@@ -83,6 +84,7 @@ const AppRoutes = () => {
             <Route path="/employee/reservations" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN', 'EMPLOYEE']}><MyReservations /></ProtectedRoute>} />
             <Route path="/employee/my-fines" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN', 'EMPLOYEE']}><MyFines /></ProtectedRoute>} />
             <Route path="/employee/book-request" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN', 'EMPLOYEE']}><BookRequestForm /></ProtectedRoute>} />
+            <Route path="/employee/rules" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN', 'EMPLOYEE']}><Rules /></ProtectedRoute>} />
 
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
