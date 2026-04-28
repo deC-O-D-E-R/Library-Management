@@ -16,6 +16,7 @@ public class CirculationResponseDTO {
     private String staffNumber;
     private Integer issuedById;
     private String issuedByName;
+    private String remark;
     private LocalDate issueDate;
     private LocalDate dueDate;
     private LocalDate returnDate;
@@ -27,7 +28,7 @@ public class CirculationResponseDTO {
                                    String bookTitle, String callNumber,
                                    Integer userId, String userName,
                                    String staffNumber, Integer issuedById,
-                                   String issuedByName, LocalDate issueDate,
+                                   String issuedByName, String remark, LocalDate issueDate,
                                    LocalDate dueDate, LocalDate returnDate,
                                    String status, LocalDateTime createdAt) {
         this.circulationId = circulationId;
@@ -41,6 +42,7 @@ public class CirculationResponseDTO {
         this.staffNumber = staffNumber;
         this.issuedById = issuedById;
         this.issuedByName = issuedByName;
+        this.remark = remark;
         this.issueDate = issueDate;
         this.dueDate = dueDate;
         this.returnDate = returnDate;
@@ -60,6 +62,7 @@ public class CirculationResponseDTO {
     public String getStaffNumber() { return staffNumber; }
     public Integer getIssuedById() { return issuedById; }
     public String getIssuedByName() { return issuedByName; }
+    public String getRemark() { return remark; }
     public LocalDate getIssueDate() { return issueDate; }
     public LocalDate getDueDate() { return dueDate; }
     public LocalDate getReturnDate() { return returnDate; }

@@ -6,6 +6,7 @@ public class CirculationRequestDTO {
 
     private Integer userId;
     private Integer copyId;
+    private String remark;
     private LocalDate issueDate;
     private LocalDate dueDate;
 
@@ -15,6 +16,9 @@ public class CirculationRequestDTO {
 
     public Integer getCopyId() { return copyId; }
     public void setCopyId(Integer copyId) { this.copyId = copyId; }
+
+    public String getRemark() { return remark; }
+    public void setRemark(String remark) { this.remark = remark; }
 
     public LocalDate getIssueDate() { return issueDate; }
     public void setIssueDate(LocalDate issueDate) { this.issueDate = issueDate; }

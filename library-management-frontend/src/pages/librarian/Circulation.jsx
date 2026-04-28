@@ -30,7 +30,8 @@ const Circulation = () => {
     const [showBookModal, setShowBookModal] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const ROWS_PER_PAGE = 10;
-    const [selectedMonth, setSelectedMonth] = useState('');
+    const [fromDate, setFromDate] = useState('');
+    const [toDate, setToDate] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -72,14 +73,14 @@ const Circulation = () => {
     };
 
     const applyDateFilter = (rows) => {
-        if (!selectedMonth || !rows) return rows;
-        const parts = selectedMonth.split('-');
-        const year = Number(parts[0]);
-        const month = parts[1] ? Number(parts[1]) : null;
-        return rows.filter(c => {
-            const dateToUse = c.returnDate ? new Date(c.returnDate) : new Date(c.issueDate);
-            if (month) return dateToUse.getFullYear() === year && (dateToUse.getMonth() + 1) === month;
-            return dateToUse.getFullYear() === year;
+        if (!rows || (!fromDate && !toDate)) return rows;
+        const from = fromDate ? new Date(fromDate) : null;
+        const to = toDate ? new Date(toDate + 'T23:59:59') : null;
+        return rows.filter(r => {
+            const d = new Date(r.issueDate);
+            if (from && d < from) return false;
+            if (to && d > to) return false;
+            return true;
         });
     };
 
@@ -181,36 +182,20 @@ const Circulation = () => {
                 </div>
 
                 {/* Date Filter */}
-                <div className="flex gap-2">
-                    <select
-                        value={selectedMonth ? selectedMonth.split('-')[1] : ''}
-                        onChange={(e) => {
-                            const year = selectedMonth?.split('-')[0] || new Date().getFullYear();
-                            setSelectedMonth(e.target.value ? `${year}-${e.target.value}` : '');
-                            setCurrentPage(1);
-                        }}
-                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm"
-                    >
-                        <option value="">All Months</option>
-                        {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-                            .map((m, i) => (
-                                <option key={i} value={String(i + 1).padStart(2, '0')}>{m}</option>
-                            ))}
-                    </select>
-                    <select
-                        value={selectedMonth ? selectedMonth.split('-')[0] : ''}
-                        onChange={(e) => {
-                            const month = selectedMonth?.split('-')[1] || '';
-                            setSelectedMonth(e.target.value ? (month ? `${e.target.value}-${month}` : `${e.target.value}`) : '');
-                            setCurrentPage(1);
-                        }}
-                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm"
-                    >
-                        <option value="">All Years</option>
-                        {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                            <option key={y} value={y}>{y}</option>
-                        ))}
-                    </select>
+                <div className="flex items-center gap-2">
+                    <input
+                        type="date"
+                        value={fromDate}
+                        onChange={(e) => setFromDate(e.target.value)}
+                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
+                    />
+                    <span className="text-text-secondary text-sm">to</span>
+                    <input
+                        type="date"
+                        value={toDate}
+                        onChange={(e) => setToDate(e.target.value)}
+                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
+                    />
                 </div>
 
                 {/* Search */}
@@ -254,8 +239,8 @@ const Circulation = () => {
                                             key={page}
                                             onClick={() => setCurrentPage(page)}
                                             className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${page === currentPage
-                                                    ? 'bg-accent text-primary border-accent font-semibold'
-                                                    : 'border-border text-text-primary hover:border-accent'
+                                                ? 'bg-accent text-primary border-accent font-semibold'
+                                                : 'border-border text-text-primary hover:border-accent'
                                                 }`}
                                         >
                                             {page}

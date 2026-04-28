@@ -20,7 +20,8 @@ const SearchBooksLibrarian = () => {
     const [showModal, setShowModal] = useState(false);
     const [reserving, setReserving] = useState(false);
     const [reserveMessage, setReserveMessage] = useState('');
-    const [selectedMonth, setSelectedMonth] = useState('');
+    const [fromDate, setFromDate] = useState('');
+    const [toDate, setToDate] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const ROWS_PER_PAGE = 10;
 
@@ -29,7 +30,6 @@ const SearchBooksLibrarian = () => {
         setLoading(true);
         setSearched(true);
         setCurrentPage(1);
-        setSelectedMonth('');
         try {
             const params = searchType === 'all' && !query.trim()
                 ? {}
@@ -102,15 +102,15 @@ const SearchBooksLibrarian = () => {
     ];
 
     const applyReceiptDateFilter = (rows) => {
-        if (!selectedMonth || !rows) return rows;
-        const parts = selectedMonth.split('-');
-        const year = Number(parts[0]);
-        const month = parts[1] ? Number(parts[1]) : null;
+        if (!rows || (!fromDate && !toDate)) return rows;
+        const from = fromDate ? new Date(fromDate) : null;
+        const to = toDate ? new Date(toDate + 'T23:59:59') : null;
         return rows.filter(r => {
             if (!r.receiptDate) return false;
             const d = new Date(r.receiptDate);
-            if (month) return d.getFullYear() === year && (d.getMonth() + 1) === month;
-            return d.getFullYear() === year;
+            if (from && d < from) return false;
+            if (to && d > to) return false;
+            return true;
         });
     };
 
@@ -171,35 +171,19 @@ const SearchBooksLibrarian = () => {
                         {/* Receipt Date Filter Row */}
                         <div className="flex items-center gap-3">
                             <span className="text-text-secondary text-sm">Receipt Date</span>
-                            <select
-                                value={selectedMonth ? selectedMonth.split('-')[1] : ''}
-                                onChange={(e) => {
-                                    const year = selectedMonth?.split('-')[0] || new Date().getFullYear();
-                                    setSelectedMonth(e.target.value ? `${year}-${e.target.value}` : '');
-                                    setCurrentPage(1);
-                                }}
+                            <input
+                                type="date"
+                                value={fromDate}
+                                onChange={(e) => { setFromDate(e.target.value); setCurrentPage(1); }}
                                 className="bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
-                            >
-                                <option value="">All Months</option>
-                                {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-                                    .map((m, i) => (
-                                        <option key={i} value={String(i + 1).padStart(2, '0')}>{m}</option>
-                                    ))}
-                            </select>
-                            <select
-                                value={selectedMonth ? selectedMonth.split('-')[0] : ''}
-                                onChange={(e) => {
-                                    const month = selectedMonth?.split('-')[1] || '';
-                                    setSelectedMonth(e.target.value ? (month ? `${e.target.value}-${month}` : `${e.target.value}`) : '');
-                                    setCurrentPage(1);
-                                }}
+                            />
+                            <span className="text-text-secondary text-sm">to</span>
+                            <input
+                                type="date"
+                                value={toDate}
+                                onChange={(e) => { setToDate(e.target.value); setCurrentPage(1); }}
                                 className="bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
-                            >
-                                <option value="">All Years</option>
-                                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                                    <option key={y} value={y}>{y}</option>
-                                ))}
-                            </select>
+                            />
                         </div>
                     </div>
                 </Card>

@@ -37,6 +37,8 @@ const AdminBooks = () => {
     const [newAccession, setNewAccession] = useState('');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const ROWS_PER_PAGE = 10;
 
     const fetchData = async () => {
         try {
@@ -61,6 +63,7 @@ const AdminBooks = () => {
             (b.isbn && b.isbn.toLowerCase().includes(q)) ||
             b.callNumber.toLowerCase().includes(q)
         ));
+        setCurrentPage(1);
     }, [search, books]);
 
     const openAdd = () => {
@@ -224,6 +227,12 @@ const AdminBooks = () => {
         }
     ];
 
+    const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
+    const paginatedBooks = filtered.slice(
+        (currentPage - 1) * ROWS_PER_PAGE,
+        currentPage * ROWS_PER_PAGE
+    );
+
     if (loading) return <Layout><Loader /></Layout>;
 
     return (
@@ -262,7 +271,59 @@ const AdminBooks = () => {
 
                 {/* Table */}
                 <Card>
-                    <Table columns={columns} data={filtered} emptyMessage="No books found" />
+                    <Table columns={columns} data={paginatedBooks} emptyMessage="No books found" />
+
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                            <p className="text-text-secondary text-xs">
+                                Showing {(currentPage - 1) * ROWS_PER_PAGE + 1}–{Math.min(currentPage * ROWS_PER_PAGE, filtered.length)} of {filtered.length}
+                            </p>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setCurrentPage(p => p - 1)}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1.5 text-xs rounded-lg border border-border text-text-primary hover:border-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Previous
+                                </button>
+                                {(() => {
+                                    const pages = [];
+                                    const addPage = (page) => pages.push(
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${page === currentPage
+                                                    ? 'bg-accent text-primary border-accent font-semibold'
+                                                    : 'border-border text-text-primary hover:border-accent'
+                                                }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    );
+                                    const addDots = (key) => pages.push(
+                                        <span key={key} className="px-2 py-1.5 text-xs text-text-secondary">...</span>
+                                    );
+                                    if (totalPages <= 5) {
+                                        for (let i = 1; i <= totalPages; i++) addPage(i);
+                                    } else {
+                                        addPage(1);
+                                        if (currentPage > 3) addDots('dots-start');
+                                        for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) addPage(i);
+                                        if (currentPage < totalPages - 2) addDots('dots-end');
+                                        addPage(totalPages);
+                                    }
+                                    return pages;
+                                })()}
+                                <button
+                                    onClick={() => setCurrentPage(p => p + 1)}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1.5 text-xs rounded-lg border border-border text-text-primary hover:border-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </Card>
 
             </div>

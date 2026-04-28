@@ -20,7 +20,8 @@ const ReturnBook = () => {
     const [search, setSearch] = useState('');
     const [selectedBook, setSelectedBook] = useState(null);
     const [showBookModal, setShowBookModal] = useState(false);
-    const [selectedMonth, setSelectedMonth] = useState('');
+    const [fromDate, setFromDate] = useState('');
+    const [toDate, setToDate] = useState('');
 
     const fetchIssued = async () => {
         try {
@@ -45,19 +46,19 @@ const ReturnBook = () => {
             c.accessionNumber.toLowerCase().includes(q)
         );
 
-        if (selectedMonth) {
-            const parts = selectedMonth.split('-');
-            const year = Number(parts[0]);
-            const month = parts[1] ? Number(parts[1]) : null;
+        if (fromDate || toDate) {
+            const from = fromDate ? new Date(fromDate) : null;
+            const to = toDate ? new Date(toDate + 'T23:59:59') : null;
             result = result.filter(c => {
                 const d = new Date(c.issueDate);
-                if (month) return d.getFullYear() === year && (d.getMonth() + 1) === month;
-                return d.getFullYear() === year;
+                if (from && d < from) return false;
+                if (to && d > to) return false;
+                return true;
             });
         }
 
         setFiltered(result);
-    }, [search, circulations, selectedMonth]);
+    }, [search, circulations, fromDate, toDate]);
 
     const handleViewBook = async (bookId) => {
         try {
@@ -111,6 +112,12 @@ const ReturnBook = () => {
             )
         },
         { header: 'Status', render: (row) => <Badge text={isOverdue(row.dueDate) ? 'overdue' : row.status} /> },
+        {
+            header: 'Remark',
+            render: (row) => row.remark
+                ? <span className="text-text-secondary text-xs break-words max-w-[100px] block">{row.remark}</span>
+                : <span className="text-text-secondary text-xs">—</span>
+        },
         {
             header: 'Action',
             render: (row) => (
@@ -185,34 +192,20 @@ const ReturnBook = () => {
                 </div>
 
                 {/* Issue Date Filter */}
-                <div className="flex gap-2">
-                    <select
-                        value={selectedMonth ? selectedMonth.split('-')[1] : ''}
-                        onChange={(e) => {
-                            const year = selectedMonth?.split('-')[0] || new Date().getFullYear();
-                            setSelectedMonth(e.target.value ? `${year}-${e.target.value}` : '');
-                        }}
-                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm"
-                    >
-                        <option value="">All Months</option>
-                        {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-                            .map((m, i) => (
-                                <option key={i} value={String(i + 1).padStart(2, '0')}>{m}</option>
-                            ))}
-                    </select>
-                    <select
-                        value={selectedMonth ? selectedMonth.split('-')[0] : ''}
-                        onChange={(e) => {
-                            const month = selectedMonth?.split('-')[1] || '';
-                            setSelectedMonth(e.target.value ? (month ? `${e.target.value}-${month}` : `${e.target.value}`) : '');
-                        }}
-                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm"
-                    >
-                        <option value="">All Years</option>
-                        {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                            <option key={y} value={y}>{y}</option>
-                        ))}
-                    </select>
+                <div className="flex items-center gap-2">
+                    <input
+                        type="date"
+                        value={fromDate}
+                        onChange={(e) => setFromDate(e.target.value)}
+                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
+                    />
+                    <span className="text-text-secondary text-sm">to</span>
+                    <input
+                        type="date"
+                        value={toDate}
+                        onChange={(e) => setToDate(e.target.value)}
+                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
+                    />
                 </div>
 
                 {/* Table */}

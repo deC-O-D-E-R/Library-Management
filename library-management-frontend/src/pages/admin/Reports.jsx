@@ -37,9 +37,10 @@ const AdminReports = () => {
     const [statusFilter, setStatusFilter] = useState('');
     const [userIdInput, setUserIdInput] = useState('');
     const [verificationIdInput, setVerificationIdInput] = useState('');
-    const [selectedMonth, setSelectedMonth] = useState('');
     const [selectedBook, setSelectedBook] = useState(null);
     const [showBookModal, setShowBookModal] = useState(false);
+    const [fromDate, setFromDate] = useState('');
+    const [toDate, setToDate] = useState('');
 
     const fetchReport = async () => {
         setLoading(true);
@@ -68,21 +69,18 @@ const AdminReports = () => {
 
     // ─── Date Filter ──────────────────────────────────────────────────────
     const applyDateFilter = (rows, dateKey) => {
-        if (!selectedMonth || !rows) return rows;
+        if (!rows) return rows;
+        if (!fromDate && !toDate) return rows;
 
-        const parts = selectedMonth.split('-');
-        const year = Number(parts[0]);
-        const month = parts[1] ? Number(parts[1]) : null;
+        const from = fromDate ? new Date(fromDate) : null;
+        const to = toDate ? new Date(toDate + 'T23:59:59') : null;
 
         return rows.filter(r => {
             if (!r[dateKey]) return false;
             const d = new Date(r[dateKey]);
-
-            if (month) {
-                return d.getFullYear() === year && d.getMonth() + 1 === month;
-            }
-
-            return d.getFullYear() === year;
+            if (from && d < from) return false;
+            if (to && d > to) return false;
+            return true;
         });
     };
 
@@ -105,8 +103,8 @@ const AdminReports = () => {
     // ─── Shared ───────────────────────────────────────────────────────────
     const fmt = (d) => d ? new Date(d).toLocaleDateString() : '—';
 
-    const monthLabel = selectedMonth
-        ? new Date(selectedMonth + '-01').toLocaleString('default', { month: 'long', year: 'numeric' })
+    const monthLabel = fromDate || toDate
+        ? `${fromDate || '...'} to ${toDate || '...'}`
         : 'All Time';
 
     // ─── PDF Download ─────────────────────────────────────────────────────
@@ -169,7 +167,7 @@ const AdminReports = () => {
                 },
                 holding: {
                     subtitle: `Categories: ${d.length}`,
-                    head: [['Category', 'Total Books', 'Total Copies', 'Available', 'Issued', 'Missing/Damaged']],
+                    head: [['Category', 'Titles', 'Total Copies', 'Available', 'Issued', 'Missing/Damaged']],
                     body: d.map(r => [
                         r.categoryName, r.totalBooks, r.totalCopies,
                         r.available, r.issued, r.missingDamaged
@@ -311,7 +309,7 @@ const AdminReports = () => {
                 'Missing/Damaged': r.missingDamagedCopies,
             })),
             holding: () => d.map(r => ({
-                'Category': r.categoryName, 'Total Books': r.totalBooks,
+                'Category': r.categoryName, 'Titles': r.totalBooks,
                 'Total Copies': r.totalCopies, 'Available': r.available,
                 'Issued': r.issued, 'Missing/Damaged': r.missingDamaged,
             })),
@@ -370,7 +368,7 @@ const AdminReports = () => {
 
     const holdingColumns = [
         { header: 'Category', key: 'categoryName' },
-        { header: 'Total Books', key: 'totalBooks' },
+        { header: 'Titles', key: 'totalBooks' },
         { header: 'Total Copies', key: 'totalCopies' },
         { header: 'Available', render: (row) => <span className="text-success">{row.available}</span> },
         { header: 'Issued', render: (row) => <span className="text-warning">{row.issued}</span> },
@@ -414,7 +412,7 @@ const AdminReports = () => {
                     {reportTabs.map((tab) => (
                         <button
                             key={tab.key}
-                            onClick={() => { setActiveTab(tab.key); setData(null); }}
+                            onClick={() => { setActiveTab(tab.key); setData(null); setFromDate(''); setToDate(''); }}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
                                 ${activeTab === tab.key
                                     ? 'bg-accent text-primary'
@@ -435,47 +433,22 @@ const AdminReports = () => {
                         {!NO_DATE_FILTER.includes(activeTab) && (
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-text-secondary text-xs font-semibold uppercase tracking-wider">
-                                    Month & Year
+                                    Date Range
                                 </label>
-                                <div className="flex gap-2">
-                                    <select
-                                        value={selectedMonth ? selectedMonth.split('-')[1] : ''}
-                                        onChange={(e) => {
-                                            const year = selectedMonth ? selectedMonth.split('-')[0] : '';
-                                            setSelectedMonth(
-                                                e.target.value
-                                                    ? (year ? `${year}-${e.target.value}` : `-${e.target.value}`)
-                                                    : (year ? `${year}` : '')
-                                            );
-                                            setData(null);
-                                        }}
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="date"
+                                        value={fromDate}
+                                        onChange={(e) => { setFromDate(e.target.value); setData(null); }}
                                         className="bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
-                                    >
-                                        <option value="">All Months</option>
-                                        {['January', 'February', 'March', 'April', 'May', 'June',
-                                            'July', 'August', 'September', 'October', 'November', 'December']
-                                            .map((m, i) => (
-                                                <option key={i} value={String(i + 1).padStart(2, '0')}>{m}</option>
-                                            ))}
-                                    </select>
-                                    <select
-                                        value={selectedMonth ? selectedMonth.split('-')[0] : ''}
-                                        onChange={(e) => {
-                                            const month = selectedMonth ? selectedMonth.split('-')[1] : '';
-                                            setSelectedMonth(
-                                                e.target.value
-                                                    ? (month ? `${e.target.value}-${month}` : `${e.target.value}`)
-                                                    : ''
-                                            );
-                                            setData(null);
-                                        }}
+                                    />
+                                    <span className="text-text-secondary text-sm">to</span>
+                                    <input
+                                        type="date"
+                                        value={toDate}
+                                        onChange={(e) => { setToDate(e.target.value); setData(null); }}
                                         className="bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
-                                    >
-                                        <option value="">All Years</option>
-                                        {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                                            <option key={y} value={y}>{y}</option>
-                                        ))}
-                                    </select>
+                                    />
                                 </div>
                             </div>
                         )}

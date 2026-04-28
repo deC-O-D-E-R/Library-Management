@@ -34,6 +34,9 @@ public class Circulation {
     @Column(name = "return_date")
     private LocalDate returnDate;
 
+    @Column(name = "remark", length = 500)
+    private String remark;
+
     @Column(name = "status", nullable = false, length = 20)
     private String status = "issued";
 
@@ -66,6 +69,9 @@ public class Circulation {
 
     public LocalDate getReturnDate() { return returnDate; }
     public void setReturnDate(LocalDate returnDate) { this.returnDate = returnDate; }
+
+    public String getRemark() { return remark; }
+    public void setRemark(String remark) { this.remark = remark; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }

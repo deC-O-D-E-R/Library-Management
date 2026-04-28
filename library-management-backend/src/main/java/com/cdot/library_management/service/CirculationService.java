@@ -88,6 +88,7 @@ public class CirculationService {
         circulation.setIssueDate(issueDate);
         circulation.setDueDate(dueDate);
         circulation.setStatus("issued");
+        circulation.setRemark(request.getRemark());
 
         Circulation savedCirculation = circulationRepository.save(circulation);
 
@@ -218,6 +219,7 @@ public class CirculationService {
                 circulation.getUser().getStaffNumber(),
                 circulation.getIssuedBy().getUserId(),
                 circulation.getIssuedBy().getName(),
+                circulation.getRemark(),
                 circulation.getIssueDate(),
                 circulation.getDueDate(),
                 circulation.getReturnDate(),

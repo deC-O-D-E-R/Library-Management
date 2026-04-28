@@ -26,7 +26,7 @@ const IssueBook = () => {
 
     const [form, setForm] = useState({
         issueDate: new Date().toISOString().split('T')[0],
-        dueDate: ''
+        dueDate: '', remark: ''
     });
 
     useEffect(() => {
@@ -100,14 +100,15 @@ const IssueBook = () => {
                 userId: selectedUser.userId,
                 copyId: selectedCopy.copyId,
                 issueDate: form.issueDate,
-                dueDate: form.dueDate || null
+                dueDate: form.dueDate || null,
+                remark: form.remark || null
             });
             setSuccess(res.data);
             setSelectedUser(null);
             setSelectedCopy(null);
             setUserSearch('');
             setBookSearch('');
-            setForm({ issueDate: new Date().toISOString().split('T')[0], dueDate: '' });
+            setForm({ issueDate: new Date().toISOString().split('T')[0], dueDate: '', remark: '' });
 
             const booksRes = await getAllBooks();
             setBooks(booksRes.data);
@@ -269,6 +270,19 @@ const IssueBook = () => {
                                     className="bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
                                 />
                             </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-text-secondary text-xs font-semibold uppercase tracking-wider">
+                                Remark (optional)
+                            </label>
+                            <textarea
+                                value={form.remark}
+                                onChange={(e) => setForm({ ...form, remark: e.target.value })}
+                                placeholder="e.g. Issued to senior staff for subordinate reference..."
+                                rows={2}
+                                className="bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent placeholder:text-text-secondary resize-none"
+                            />
                         </div>
 
                         {reservationWarning && (

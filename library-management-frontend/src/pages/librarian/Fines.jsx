@@ -27,13 +27,12 @@ const Fines = () => {
 
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportType, setReportType] = useState('month');
-    const [selectedMonth, setSelectedMonth] = useState(() => {
-        const now = new Date();
-        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    });
     const [empSearch, setEmpSearch] = useState('');
     const [selectedEmp, setSelectedEmp] = useState(null);
     const [fineSystemEnabled, setFineSystemEnabled] = useState(true);
+
+    const [fromDate, setFromDate] = useState('');
+    const [toDate, setToDate] = useState('');
 
     const fetchData = async () => {
         try {
@@ -64,19 +63,14 @@ const Fines = () => {
     };
 
     const applyDateFilter = (rows) => {
-        if (!selectedMonth || !rows) return rows;
-
-        const parts = selectedMonth.split('-');
-        const year = Number(parts[0]);
-        const month = parts[1] ? Number(parts[1]) : null;
-
+        if (!rows || (!fromDate && !toDate)) return rows;
+        const from = fromDate ? new Date(fromDate) : null;
+        const to = toDate ? new Date(toDate + 'T23:59:59') : null;
         return rows.filter(f => {
-            const dateToUse = f.returnDate ? new Date(f.returnDate) : new Date(f.issueDate);
-
-            if (month) {
-                return dateToUse.getFullYear() === year && (dateToUse.getMonth() + 1) === month;
-            }
-            return dateToUse.getFullYear() === year;
+            const d = f.returnDate ? new Date(f.returnDate) : new Date(f.issueDate);
+            if (from && d < from) return false;
+            if (to && d > to) return false;
+            return true;
         });
     };
 
@@ -218,16 +212,23 @@ const Fines = () => {
   </table>`;
 
     const handleMonthReport = () => {
-        const [year, month] = selectedMonth.split('-').map(Number);
+        const from = fromDate ? new Date(fromDate) : null;
+        const to = toDate ? new Date(toDate + 'T23:59:59') : null;
+
+        if (!from && !to) return alert('Please select a date range.');
+
         const data = all.filter(f => {
             const d = f.returnDate ? new Date(f.returnDate) : new Date(f.issueDate);
-            return d.getFullYear() === year && d.getMonth() + 1 === month;
+            if (from && d < from) return false;
+            if (to && d > to) return false;
+            return true;
         });
-        if (!data.length) return alert('No fines found for the selected month.');
-        const monthLabel = new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+
+        if (!data.length) return alert('No fines found for the selected range.');
+        const rangeLabel = `${fromDate || '...'} to ${toDate || '...'}`;
         const html = buildReportShell(
-            `Fines Report - ${monthLabel}`,
-            `Month: ${monthLabel}`,
+            `Fines Report - ${rangeLabel}`,
+            `Period: ${rangeLabel}`,
             tableWrap(data.map(fineRow).join('')),
             summaryBlock(data)
         );
@@ -236,11 +237,26 @@ const Fines = () => {
 
     const handleEmployeeReport = () => {
         if (!selectedEmp) return alert('Please select an employee.');
-        const data = all.filter(f => f.staffNumber === selectedEmp.staffNumber);
+
+        const from = fromDate ? new Date(fromDate) : null;
+        const to = toDate ? new Date(toDate + 'T23:59:59') : null;
+
+        let data = all.filter(f => f.staffNumber === selectedEmp.staffNumber);
+
+        if (from || to) {
+            data = data.filter(f => {
+                const d = f.returnDate ? new Date(f.returnDate) : new Date(f.issueDate);
+                if (from && d < from) return false;
+                if (to && d > to) return false;
+                return true;
+            });
+        }
+
         if (!data.length) return alert('No fines found for this employee.');
+        const rangeLabel = (from || to) ? ` | Period: ${fromDate || '...'} to ${toDate || '...'}` : '';
         const html = buildReportShell(
             `Fines Report - ${selectedEmp.userName}`,
-            `Employee: ${selectedEmp.userName} | Staff No: ${selectedEmp.staffNumber}`,
+            `Employee: ${selectedEmp.userName} | Staff No: ${selectedEmp.staffNumber}${rangeLabel}`,
             tableWrap(data.map(fineRow).join('')),
             summaryBlock(data)
         );
@@ -379,41 +395,20 @@ const Fines = () => {
                 </div>
 
 
-                <div className="flex gap-2">
-                    {/* Month */}
-                    <select
-                        value={selectedMonth ? selectedMonth.split('-')[1] : ''}
-                        onChange={(e) => {
-                            const year = selectedMonth?.split('-')[0] || new Date().getFullYear();
-                            setSelectedMonth(e.target.value ? `${year}-${e.target.value}` : '');
-                        }}
-                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm"
-                    >
-                        <option value="">All Months</option>
-                        {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-                            .map((m, i) => (
-                                <option key={i} value={String(i + 1).padStart(2, '0')}>{m}</option>
-                            ))}
-                    </select>
-
-                    {/* Year */}
-                    <select
-                        value={selectedMonth ? selectedMonth.split('-')[0] : ''}
-                        onChange={(e) => {
-                            const month = selectedMonth?.split('-')[1] || '';
-                            setSelectedMonth(
-                                e.target.value
-                                    ? (month ? `${e.target.value}-${month}` : `${e.target.value}`)
-                                    : ''
-                            );
-                        }}
-                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm"
-                    >
-                        <option value="">All Years</option>
-                        {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                            <option key={y} value={y}>{y}</option>
-                        ))}
-                    </select>
+                <div className="flex items-center gap-2">
+                    <input
+                        type="date"
+                        value={fromDate}
+                        onChange={(e) => setFromDate(e.target.value)}
+                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
+                    />
+                    <span className="text-text-secondary text-sm">to</span>
+                    <input
+                        type="date"
+                        value={toDate}
+                        onChange={(e) => setToDate(e.target.value)}
+                        className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
+                    />
                 </div>
 
                 {/* Search */}
@@ -454,7 +449,7 @@ const Fines = () => {
 
                             {/* Report Type Toggle */}
                             <div className="flex gap-2">
-                                {[{ key: 'month', label: 'Month-wise' }, { key: 'employee', label: 'Employee-wise' }].map(t => (
+                                {[{ key: 'month', label: 'Date Range' }, { key: 'employee', label: 'Employee-wise' }].map(t => (
                                     <button
                                         key={t.key}
                                         onClick={() => { setReportType(t.key); setSelectedEmp(null); setEmpSearch(''); }}
@@ -472,13 +467,22 @@ const Fines = () => {
                             {/* Month Picker */}
                             {reportType === 'month' && (
                                 <div className="flex flex-col gap-2">
-                                    <label className="text-text-secondary text-xs uppercase tracking-wider">Select Month</label>
-                                    <input
-                                        type="month"
-                                        value={selectedMonth}
-                                        onChange={(e) => setSelectedMonth(e.target.value)}
-                                        className="bg-surface border border-border text-text-primary rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-accent"
-                                    />
+                                    <label className="text-text-secondary text-xs uppercase tracking-wider">Date Range</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="date"
+                                            value={fromDate}
+                                            onChange={(e) => setFromDate(e.target.value)}
+                                            className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent flex-1"
+                                        />
+                                        <span className="text-text-secondary text-sm">to</span>
+                                        <input
+                                            type="date"
+                                            value={toDate}
+                                            onChange={(e) => setToDate(e.target.value)}
+                                            className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent flex-1"
+                                        />
+                                    </div>
                                 </div>
                             )}
 
@@ -522,6 +526,24 @@ const Fines = () => {
                                             <span className="text-text-secondary text-xs">{selectedEmp.staffNumber}</span>
                                         </div>
                                     )}
+
+                                    {/* Date Range */}
+                                    <label className="text-text-secondary text-xs uppercase tracking-wider mt-1">Date Range (optional)</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="date"
+                                            value={fromDate}
+                                            onChange={(e) => setFromDate(e.target.value)}
+                                            className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent flex-1"
+                                        />
+                                        <span className="text-text-secondary text-sm">to</span>
+                                        <input
+                                            type="date"
+                                            value={toDate}
+                                            onChange={(e) => setToDate(e.target.value)}
+                                            className="bg-surface border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent flex-1"
+                                        />
+                                    </div>
                                 </div>
                             )}
 
