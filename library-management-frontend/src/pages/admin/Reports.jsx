@@ -46,6 +46,11 @@ const AdminReports = () => {
     const [invToDate, setInvToDate] = useState('');
     const [invFilters, setInvFilters] = useState({ callNo: true, accNo: false, price: false });
     const [invSort, setInvSort] = useState('callNo');
+    const [stockSort, setStockSort] = useState('callNo');
+    const [stockIncludeRemarks, setStockIncludeRemarks] = useState(false);
+
+    // Stock verification filter: 'all' | 'changed' | 'unchanged'
+    const [stockFilter, setStockFilter] = useState('all');
 
     useEffect(() => {
         if (activeTab === 'inventory') {
@@ -104,7 +109,7 @@ const AdminReports = () => {
                 ...data,
                 circulationHistory: applyDateFilter(data.circulationHistory || [], 'issueDate'),
             };
-            default: return data; // inventory, holding, stock (no date filter)
+            default: return data;
         }
     };
 
@@ -122,7 +127,6 @@ const AdminReports = () => {
     const getInventoryRows = () => {
         if (!data) return { rows: [], summary: null };
 
-        // Apply date filter
         let books = data;
         if (invFromDate || invToDate) {
             const from = invFromDate ? new Date(invFromDate) : null;
@@ -137,29 +141,25 @@ const AdminReports = () => {
         }
 
         const useAccNo = invFilters.accNo;
-        const useCallNo = invFilters.callNo || (!invFilters.accNo && !invFilters.callNo); // default to callNo
+        const useCallNo = invFilters.callNo || (!invFilters.accNo && !invFilters.callNo);
         const usePrice = invFilters.price;
 
-        // Build rows
         let rows = [];
 
         if (useAccNo) {
-            // One row per copy
             books.forEach(book => {
                 (book.copies || []).forEach(copy => {
-                    const row = {
+                    rows.push({
                         title: book.title,
                         author: book.author,
                         accNo: copy.accessionNumber,
                         callNo: book.callNumber,
                         status: copy.status,
                         price: book.price,
-                    };
-                    rows.push(row);
+                    });
                 });
             });
         } else {
-            // One row per book
             books.forEach(book => {
                 rows.push({
                     title: book.title,
@@ -174,18 +174,12 @@ const AdminReports = () => {
             });
         }
 
-        // Sort
         rows.sort((a, b) => {
-            if (invSort === 'accNo' && useAccNo) {
-                return (a.accNo || '').localeCompare(b.accNo || '');
-            }
-            if (invSort === 'price' && usePrice) {
-                return (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0);
-            }
-            return (a.callNo || '').localeCompare(b.callNo || ''); // default callNo
+            if (invSort === 'accNo' && useAccNo) return (a.accNo || '').localeCompare(b.accNo || '');
+            if (invSort === 'price' && usePrice) return (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0);
+            return (a.callNo || '').localeCompare(b.callNo || '');
         });
 
-        // Summary
         const totalTitles = books.length;
         const totalCopies = books.reduce((s, b) => s + b.totalCopies, 0);
         const totalAvailable = books.reduce((s, b) => s + b.availableCopies, 0);
@@ -195,13 +189,7 @@ const AdminReports = () => {
             ? books.reduce((s, b) => s + (parseFloat(b.price) || 0) * b.totalCopies, 0)
             : null;
 
-        return {
-            rows,
-            useAccNo,
-            useCallNo,
-            usePrice,
-            summary: { totalTitles, totalCopies, totalAvailable, totalIssued, totalMissing, totalValue }
-        };
+        return { rows, useAccNo, useCallNo, usePrice, summary: { totalTitles, totalCopies, totalAvailable, totalIssued, totalMissing, totalValue } };
     };
 
 
@@ -213,8 +201,7 @@ const AdminReports = () => {
             ? `${invFromDate || '...'} to ${invToDate || '...'}`
             : 'All Time';
 
-        const generated = `Generated: ${new Date().toLocaleString()} | Period: ${activeTab === 'inventory' ? invDateLabel : monthLabel
-            }`;
+        const generated = `Generated: ${new Date().toLocaleString()} | Period: ${activeTab === 'inventory' ? invDateLabel : monthLabel}`;
 
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
@@ -255,27 +242,17 @@ const AdminReports = () => {
                 circulation: {
                     subtitle: `Status: ${statusFilter || 'All'} | Period: ${monthLabel} | Records: ${d.length}`,
                     head: [['Book', 'Borrower', 'Staff No.', 'Issue Date', 'Due Date', 'Return Date', 'Status']],
-                    body: d.map(r => [
-                        r.bookTitle, r.userName, r.staffNumber,
-                        fmt(r.issueDate), fmt(r.dueDate), fmt(r.returnDate), r.status
-                    ]),
+                    body: d.map(r => [r.bookTitle, r.userName, r.staffNumber, fmt(r.issueDate), fmt(r.dueDate), fmt(r.returnDate), r.status]),
                 },
                 holding: {
                     subtitle: `Categories: ${d.length}`,
                     head: [['Category', 'Titles', 'Total Copies', 'Available', 'Issued', 'Missing/Damaged']],
-                    body: d.map(r => [
-                        r.categoryName, r.totalBooks, r.totalCopies,
-                        r.available, r.issued, r.missingDamaged
-                    ]),
+                    body: d.map(r => [r.categoryName, r.totalBooks, r.totalCopies, r.available, r.issued, r.missingDamaged]),
                 },
                 overdue: {
                     subtitle: `Period: ${monthLabel} | Total Overdue: ${d.length}`,
                     head: [['Book', 'Staff No.', 'Borrower', 'Email', 'Due Date', 'Days Overdue', 'Est. Fine']],
-                    body: d.map(r => [
-                        r.bookTitle, r.staffNumber, r.userName, r.email,
-                        fmt(r.dueDate), r.daysOverdue,
-                        `₹${parseFloat(r.estimatedFine).toFixed(2)}`
-                    ]),
+                    body: d.map(r => [r.bookTitle, r.staffNumber, r.userName, r.email, fmt(r.dueDate), r.daysOverdue, `₹${parseFloat(r.estimatedFine).toFixed(2)}`]),
                 },
             };
         }
@@ -298,75 +275,90 @@ const AdminReports = () => {
                 ...tableStyle,
             });
         } else if (activeTab === 'stock') {
-            doc.setFontSize(9);
-            doc.setTextColor(80);
-            doc.text(`Verification ID: ${verificationIdInput}`, 14, startY);
-            doc.setTextColor(0);
-            startY += 6;
+            const allDetails = [...(d.details || [])].sort((a, b) =>
+                stockSort === 'accNo'
+                    ? (a.accessionNumber || '').localeCompare(b.accessionNumber || '')
+                    : (a.callNumber || '').localeCompare(b.callNumber || '')
+            );
+            const changedCount = allDetails.filter(r => r.statusChanged).length;
+            const noChangeCount = allDetails.length - changedCount;
 
             const scopeLabel =
-                d.scopeType === 'call_number_range'
-                    ? d.scopeValue
-                    : d.scopeType === 'category'
-                        ? `Category: ${d.scopeValue}`
+                d.scopeType === 'call_number_range' ? d.scopeValue
+                    : d.scopeType === 'category' ? `Category: ${d.scopeValue}`
                         : 'Full Library';
 
-            doc.setFontSize(10);
-            doc.setTextColor(80);
-            doc.text(`Scope: ${scopeLabel}`, 14, startY);
-            doc.setTextColor(0);
-
-            startY += 6;
-            addMeta([
-                ['Total Scanned', d.totalScanned], ['Available', d.availableCount],
-                ['Missing', d.missingCount], ['Damaged', d.damagedCount],
-            ]);
-
-            //verifiers
-            doc.setFont('helvetica', 'normal');
             doc.setFontSize(9);
+            doc.setTextColor(80);
+            doc.text(`Verification ID: ${verificationIdInput} | Scope: ${scopeLabel}`, 14, startY);
+            doc.setTextColor(0);
+            startY += 8;
 
+            // Verifiers
+            doc.setFontSize(9);
             doc.text('Verifiers:', 14, startY);
             startY += 6;
-
             (d.assignments || []).forEach((a, i) => {
                 const scope =
-                    a.scopeType === 'call_number_range'
-                        ? `${a.scopeFrom} => ${a.scopeTo}`
-                        : a.scopeType === 'category'
-                            ? `Category: ${a.scopeFrom}`
+                    a.scopeType === 'call_number_range' ? `${a.scopeFrom} => ${a.scopeTo}`
+                        : a.scopeType === 'category' ? `Category: ${a.scopeFrom}`
                             : 'Full Library';
-
-                // Line 1: Name + designation
                 doc.setFont('helvetica', 'bold');
                 doc.text(`${i + 1}. ${a.name}`, 14, startY);
-
                 doc.setFont('helvetica', 'normal');
                 doc.text(`(${a.empId}) - ${a.designation}`, 80, startY);
-
                 startY += 5;
-
-                // Line 2: Scope
                 doc.setTextColor(100);
                 doc.text(`Scope: ${scope}`, 18, startY);
                 doc.setTextColor(0);
-
                 startY += 7;
             });
 
+            // Table first
             autoTable(doc, {
                 startY,
-                head: [['Accession No.', 'Title', 'Call No.', 'Verified By', 'Previous Status', 'Marked Status', 'Changed']],
-                body: (d.details || []).map(r => [
+                head: [['Accession No.', 'Title', 'Call No.', 'Verified By', 'Previous Status', 'Marked Status', 'Changed', ...(stockIncludeRemarks ? ['Remarks'] : [])]],
+                body: allDetails.map(r => [
                     r.accessionNumber,
                     r.bookTitle,
                     r.callNumber,
-                    r.verifierName || '-',
+                    r.verifierName || '',
                     r.previousStatus,
-                    r.markedStatus,
-                    r.statusChanged ? 'Yes' : 'No'
+                    r.markedStatus || r.previousStatus,
+                    r.statusChanged ? 'Yes' : 'No',
+                    ...(stockIncludeRemarks ? [r.remarks || ''] : [])
                 ]),
+                columnStyles: stockIncludeRemarks ? {
+                    7: { cellWidth: 16, overflow: 'linebreak' }
+                } : {},
+                didParseCell: (data) => {
+                    if (data.row.raw && data.row.raw[6] === 'Yes') {
+                        data.cell.styles.fillColor = [80, 20, 20];
+                        data.cell.styles.textColor = [255, 255, 255];
+                    }
+                },
                 ...tableStyle,
+            });
+
+            // Summary AFTER the table
+            const finalY = doc.lastAutoTable.finalY + 10;
+            [
+                ['Total Records', allDetails.length],
+                ['Available', d.availableCount],
+                ['Missing', d.missingCount],
+                ['Damaged', d.damagedCount],
+                ['Changed', changedCount],
+                ['No Change', noChangeCount],
+            ].forEach(([label, value], i) => {
+                const x = 14 + i * 32;
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(10);
+                doc.text(String(value), x, finalY + 5);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8);
+                doc.setTextColor(120);
+                doc.text(label, x, finalY + 9);
+                doc.setTextColor(0);
             });
         } else if (activeTab === 'inventory') {
             const { rows, useAccNo, useCallNo, usePrice, summary } = getInventoryRows();
@@ -381,34 +373,21 @@ const AdminReports = () => {
             doc.setTextColor(0);
             startY += 6;
 
-            // Build head and body based on filters
             let head, body;
 
             if (useAccNo && useCallNo) {
                 head = [['Title', 'Author', 'Acc No.', 'Call No.', 'Status', ...(usePrice ? ['Price'] : [])]];
-                body = rows.map(r => [
-                    r.title, r.author, r.accNo, r.callNo, r.status,
-                    ...(usePrice ? [`₹${parseFloat(r.price || 0).toFixed(2)}`] : [])
-                ]);
+                body = rows.map(r => [r.title, r.author, r.accNo, r.callNo, r.status, ...(usePrice ? [`₹${parseFloat(r.price || 0).toFixed(2)}`] : [])]);
             } else if (useAccNo) {
                 head = [['Title', 'Author', 'Acc No.', 'Status', ...(usePrice ? ['Price'] : [])]];
-                body = rows.map(r => [
-                    r.title, r.author, r.accNo, r.status,
-                    ...(usePrice ? [`₹${parseFloat(r.price || 0).toFixed(2)}`] : [])
-                ]);
+                body = rows.map(r => [r.title, r.author, r.accNo, r.status, ...(usePrice ? [`₹${parseFloat(r.price || 0).toFixed(2)}`] : [])]);
             } else {
-                // callNo only or neither (defaults to callNo)
                 head = [['Title', 'Author', 'Call No.', 'Total', 'Available', 'Issued', 'Missing', ...(usePrice ? ['Price'] : [])]];
-                body = rows.map(r => [
-                    r.title, r.author, r.callNo,
-                    r.totalCopies, r.available, r.issued, r.missing,
-                    ...(usePrice ? [`₹${parseFloat(r.price || 0).toFixed(2)}`] : [])
-                ]);
+                body = rows.map(r => [r.title, r.author, r.callNo, r.totalCopies, r.available, r.issued, r.missing, ...(usePrice ? [`₹${parseFloat(r.price || 0).toFixed(2)}`] : [])]);
             }
 
             autoTable(doc, { startY, head, body, ...tableStyle });
 
-            // Summary block
             const finalY = doc.lastAutoTable.finalY + 8;
             doc.setFontSize(9);
             doc.setFont('helvetica', 'bold');
@@ -436,7 +415,7 @@ const AdminReports = () => {
             });
 
             doc.save(`Inventory_Report_${dateLabel.replace(/\s+/g, '_')}.pdf`);
-            return
+            return;
 
         } else {
             const cfg = configs[activeTab];
@@ -472,28 +451,14 @@ const AdminReports = () => {
 
                 const dataRows = rows.map(r => {
                     if (useAccNo && useCallNo) {
-                        return {
-                            'Title': r.title, 'Author': r.author,
-                            'Acc No.': r.accNo, 'Call No.': r.callNo, 'Status': r.status,
-                            ...(usePrice ? { 'Price (₹)': parseFloat(r.price || 0).toFixed(2) } : {})
-                        };
+                        return { 'Title': r.title, 'Author': r.author, 'Acc No.': r.accNo, 'Call No.': r.callNo, 'Status': r.status, ...(usePrice ? { 'Price (₹)': parseFloat(r.price || 0).toFixed(2) } : {}) };
                     } else if (useAccNo) {
-                        return {
-                            'Title': r.title, 'Author': r.author,
-                            'Acc No.': r.accNo, 'Status': r.status,
-                            ...(usePrice ? { 'Price (₹)': parseFloat(r.price || 0).toFixed(2) } : {})
-                        };
+                        return { 'Title': r.title, 'Author': r.author, 'Acc No.': r.accNo, 'Status': r.status, ...(usePrice ? { 'Price (₹)': parseFloat(r.price || 0).toFixed(2) } : {}) };
                     } else {
-                        return {
-                            'Title': r.title, 'Author': r.author, 'Call No.': r.callNo,
-                            'Total': r.totalCopies, 'Available': r.available,
-                            'Issued': r.issued, 'Missing/Damaged': r.missing,
-                            ...(usePrice ? { 'Price (₹)': parseFloat(r.price || 0).toFixed(2) } : {})
-                        };
+                        return { 'Title': r.title, 'Author': r.author, 'Call No.': r.callNo, 'Total': r.totalCopies, 'Available': r.available, 'Issued': r.issued, 'Missing/Damaged': r.missing, ...(usePrice ? { 'Price (₹)': parseFloat(r.price || 0).toFixed(2) } : {}) };
                     }
                 });
 
-                //summary
                 dataRows.push({});
                 dataRows.push({ 'Title': '— SUMMARY —' });
                 dataRows.push({ 'Title': 'Total Titles', 'Author': summary.totalTitles });
@@ -501,9 +466,7 @@ const AdminReports = () => {
                 dataRows.push({ 'Title': 'Available', 'Author': summary.totalAvailable });
                 dataRows.push({ 'Title': 'Issued', 'Author': summary.totalIssued });
                 dataRows.push({ 'Title': 'Missing/Damaged', 'Author': summary.totalMissing });
-                if (usePrice) {
-                    dataRows.push({ 'Title': 'Total Collection Value (₹)', 'Author': summary.totalValue.toFixed(2) });
-                }
+                if (usePrice) dataRows.push({ 'Title': 'Total Collection Value (₹)', 'Author': summary.totalValue.toFixed(2) });
 
                 return dataRows;
             },
@@ -517,17 +480,54 @@ const AdminReports = () => {
                 'Email': r.email, 'Due Date': fmt(r.dueDate),
                 'Days Overdue': r.daysOverdue, 'Est. Fine': r.estimatedFine,
             })),
-            stock: () => (d.details || []).map(r => ({
-                'Accession No.': r.accessionNumber, 'Title': r.bookTitle,
-                'Call No.': r.callNumber, 'Previous Status': r.previousStatus,
-                'Marked Status': r.markedStatus, 'Changed': r.statusChanged ? 'Yes' : 'No',
-            })),
+            // Full report: all entries, not just discrepancies
+            stock: () => {
+                const allDetails = [...(d.details || [])].sort((a, b) =>
+                    stockSort === 'accNo'
+                        ? (a.accessionNumber || '').localeCompare(b.accessionNumber || '')
+                        : (a.callNumber || '').localeCompare(b.callNumber || '')
+                );
+                const rows = allDetails.map(r => ({
+                    'Accession No.': r.accessionNumber,
+                    'Title': r.bookTitle,
+                    'Call No.': r.callNumber,
+                    'Verified By': r.verifierName || '',
+                    'Previous Status': r.previousStatus,
+                    'Marked Status': r.markedStatus || r.previousStatus,
+                    'Status Changed': r.statusChanged ? 'Yes' : 'No',
+                    ...(stockIncludeRemarks ? { 'Remarks': r.remarks || '' } : {}),
+                }));
+
+                // Summary rows at the bottom
+                const changedCount = allDetails.filter(r => r.statusChanged).length;
+                rows.push({});
+                rows.push({ 'Accession No.': '— SUMMARY —' });
+                rows.push({ 'Accession No.': 'Total Records', 'Title': allDetails.length });
+                rows.push({ 'Accession No.': 'Status Changed', 'Title': changedCount });
+                rows.push({ 'Accession No.': 'No Change', 'Title': allDetails.length - changedCount });
+                rows.push({ 'Accession No.': 'Available', 'Title': d.availableCount });
+                rows.push({ 'Accession No.': 'Missing', 'Title': d.missingCount });
+                rows.push({ 'Accession No.': 'Damaged', 'Title': d.damagedCount });
+
+                return rows;
+            },
         };
 
         const rows = builders[activeTab]?.();
         if (!rows) return;
 
         const ws = XLSX.utils.json_to_sheet(rows);
+
+        if (stockIncludeRemarks) {
+            const remarksColIndex = 7;
+            const colLetter = 'H';
+            if (!ws['!cols']) ws['!cols'] = [];
+            ws['!cols'][remarksColIndex] = { wch: 35 };
+            Object.keys(ws).filter(k => k.startsWith(colLetter) && k !== '!cols').forEach(k => {
+                if (ws[k].v) ws[k].s = { alignment: { wrapText: true } };
+            });
+        }
+
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, title);
 
@@ -595,7 +595,7 @@ const AdminReports = () => {
                     {reportTabs.map((tab) => (
                         <button
                             key={tab.key}
-                            onClick={() => { setActiveTab(tab.key); setData(null); setFromDate(''); setToDate(''); }}
+                            onClick={() => { setActiveTab(tab.key); setData(null); setFromDate(''); setToDate(''); setStockFilter('all'); setStockSort('callNo'); setStockIncludeRemarks(false); }}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
                                 ${activeTab === tab.key
                                     ? 'bg-accent text-primary'
@@ -612,7 +612,6 @@ const AdminReports = () => {
                 <Card>
                     <div className="flex items-end gap-4 flex-wrap">
 
-                        {/* Month Filter — shown for all tabs except inventory, holding, stock */}
                         {!NO_DATE_FILTER.includes(activeTab) && (
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-text-secondary text-xs font-semibold uppercase tracking-wider">
@@ -703,7 +702,7 @@ const AdminReports = () => {
                         }`}>
 
                         {/* Download Buttons */}
-                        {activeTab !== 'inventory' && (
+                        {activeTab !== 'inventory' && activeTab !== 'stock' && (
                             <div className="flex gap-2 mb-4">
                                 <Button size="sm" onClick={handleDownloadPDF}>
                                     Download PDF
@@ -745,7 +744,6 @@ const AdminReports = () => {
                         {activeTab === 'inventory' && (
                             <div className="flex flex-col gap-5">
 
-                                {/* Receipt Date Range */}
                                 <div className="flex flex-col gap-2">
                                     <span className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Receipt Date Range</span>
                                     <div className="flex items-center gap-3">
@@ -767,7 +765,6 @@ const AdminReports = () => {
 
                                 <div className="h-px bg-border" />
 
-                                {/* Include Columns */}
                                 <div className="flex flex-col gap-2">
                                     <span className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Include Columns</span>
                                     <div className="flex gap-6">
@@ -791,7 +788,6 @@ const AdminReports = () => {
 
                                 <div className="h-px bg-border" />
 
-                                {/* Sort Order */}
                                 <div className="flex flex-col gap-2">
                                     <span className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Sort By</span>
                                     <div className="flex gap-6">
@@ -818,7 +814,6 @@ const AdminReports = () => {
 
                                 <div className="h-px bg-border" />
 
-                                {/* Download */}
                                 <div className="flex gap-3">
                                     <Button onClick={handleDownloadPDF}>Download PDF</Button>
                                     <Button variant="secondary" onClick={handleDownloadExcel}>Download Excel</Button>
@@ -849,42 +844,76 @@ const AdminReports = () => {
                             <Table columns={overdueColumns} data={filteredData} emptyMessage="No overdue books" />
                         )}
 
-                        {/* Stock Verification */}
-                        {activeTab === 'stock' && (
-                            <div className="flex flex-col gap-4">
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    {[
-                                        { label: 'Total Scanned', value: filteredData.totalScanned },
-                                        { label: 'Available', value: filteredData.availableCount, color: 'text-success' },
-                                        { label: 'Missing', value: filteredData.missingCount, color: 'text-danger' },
-                                        { label: 'Damaged', value: filteredData.damagedCount, color: 'text-warning' },
-                                    ].map((stat, i) => (
-                                        <div key={i} className="bg-sidebar rounded-lg p-3 text-center">
-                                            <p className="text-text-secondary text-xs">{stat.label}</p>
-                                            <p className={`font-bold text-xl mt-1 ${stat.color || 'text-text-primary'}`}>
-                                                {stat.value}
-                                            </p>
+                        {/* ── Stock Verification — Full Report ── */}
+                        {activeTab === 'stock' && (() => {
+                            const allDetails = filteredData.details || [];
+                            const changedCount = allDetails.filter(r => r.statusChanged).length;
+                            const noChangeCount = allDetails.length - changedCount;
+
+                            return (
+                                <div className="flex flex-col gap-5">
+
+                                    <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+                                        {[
+                                            { label: 'Total Records', value: allDetails.length, color: 'text-text-primary' },
+                                            { label: 'Available', value: filteredData.availableCount, color: 'text-success' },
+                                            { label: 'Missing', value: filteredData.missingCount, color: 'text-danger' },
+                                            { label: 'Damaged', value: filteredData.damagedCount, color: 'text-warning' },
+                                            { label: 'Status Changed', value: changedCount, color: 'text-danger' },
+                                            { label: 'No Change', value: noChangeCount, color: 'text-success' },
+                                        ].map((stat, i) => (
+                                            <div key={i} className="bg-sidebar rounded-lg p-3 text-center">
+                                                <p className="text-text-secondary text-xs">{stat.label}</p>
+                                                <p className={`font-bold text-xl mt-1 ${stat.color}`}>{stat.value}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Sort By</span>
+                                        <div className="flex gap-6">
+                                            {[
+                                                { value: 'callNo', label: 'Call No.' },
+                                                { value: 'accNo', label: 'Acc No.' },
+                                            ].map(({ value, label }) => (
+                                                <label key={value} className="flex items-center gap-2 text-text-primary text-sm cursor-pointer">
+                                                    <input
+                                                        type="radio"
+                                                        name="stockSort"
+                                                        value={value}
+                                                        checked={stockSort === value}
+                                                        onChange={() => setStockSort(value)}
+                                                        className="accent-accent w-4 h-4"
+                                                    />
+                                                    {label}
+                                                </label>
+                                            ))}
                                         </div>
-                                    ))}
+                                    </div>
+
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Include Columns (Only if Remarks are required)</span>
+                                        <label className="flex items-center gap-2 text-text-primary text-sm cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={stockIncludeRemarks}
+                                                onChange={(e) => setStockIncludeRemarks(e.target.checked)}
+                                                className="accent-accent w-4 h-4"
+                                            />
+                                            Remarks
+                                        </label>
+                                    </div>
+
+                                    <div className="h-px bg-border" />
+
+                                    <div className="flex gap-3">
+                                        <Button onClick={handleDownloadPDF}>Download PDF</Button>
+                                        <Button variant="secondary" onClick={handleDownloadExcel}>Download Excel</Button>
+                                    </div>
+
                                 </div>
-                                <Table
-                                    columns={[
-                                        { header: 'Accession No.', key: 'accessionNumber' },
-                                        { header: 'Title', key: 'bookTitle' },
-                                        { header: 'Call No.', key: 'callNumber' },
-                                        { header: 'Previous Status', render: (row) => <Badge text={row.previousStatus} /> },
-                                        { header: 'Marked Status', render: (row) => <Badge text={row.markedStatus} /> },
-                                        {
-                                            header: 'Changed', render: (row) => row.statusChanged
-                                                ? <span className="text-danger text-xs font-semibold">Yes</span>
-                                                : <span className="text-success text-xs">No</span>
-                                        },
-                                    ]}
-                                    data={filteredData.details || []}
-                                    emptyMessage="No discrepancies found"
-                                />
-                            </div>
-                        )}
+                            );
+                        })()}
 
                     </Card>
                 )}

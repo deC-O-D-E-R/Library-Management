@@ -188,6 +188,6 @@ public class ReportService {
 
     //stock verification report
     public StockVerificationResponseDTO getStockVerificationReport(Integer verificationId) {
-        return stockVerificationService.getDiscrepancyReport(verificationId);
+        return stockVerificationService.getFullVerificationReport(verificationId);
     }
 }

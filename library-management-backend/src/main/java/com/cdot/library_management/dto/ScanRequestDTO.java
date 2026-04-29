@@ -5,6 +5,7 @@ public class ScanRequestDTO {
     private String accessionNumber;
     private String markedStatus;
     private Integer assignmentId;
+    private String remarks;
 
     public String getAccessionNumber() { return accessionNumber; }
     public void setAccessionNumber(String accessionNumber) { this.accessionNumber = accessionNumber; }
@@ -14,4 +15,7 @@ public class ScanRequestDTO {
 
     public Integer getAssignmentId() { return assignmentId; }
     public void setAssignmentId(Integer assignmentId) { this.assignmentId = assignmentId; }
+
+    public String getRemarks() { return remarks; }
+    public void setRemarks(String remarks) { this.remarks = remarks; }
 }

@@ -110,12 +110,13 @@ public class StockVerificationResponseDTO {
         private LocalDateTime verifiedAt;
         private Integer assignmentId;
         private String verifierName;
+        private String remarks;
 
         public ScanDetailDTO(Integer detailId, Integer copyId, String accessionNumber,
                               String bookTitle, String callNumber, String previousStatus,
                               String markedStatus, boolean statusChanged,
                               LocalDateTime verifiedAt, Integer assignmentId,
-                              String verifierName) {
+                              String verifierName, String remarks) {
             this.detailId = detailId;
             this.copyId = copyId;
             this.accessionNumber = accessionNumber;
@@ -127,6 +128,7 @@ public class StockVerificationResponseDTO {
             this.verifiedAt = verifiedAt;
             this.assignmentId = assignmentId;
             this.verifierName = verifierName;
+            this.remarks = remarks;
         }
 
         public Integer getDetailId() { return detailId; }
@@ -140,5 +142,6 @@ public class StockVerificationResponseDTO {
         public LocalDateTime getVerifiedAt() { return verifiedAt; }
         public Integer getAssignmentId() { return assignmentId; }
         public String getVerifierName() { return verifierName; }
+        public String getRemarks() { return remarks; }
     }
 }

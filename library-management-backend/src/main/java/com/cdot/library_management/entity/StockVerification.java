@@ -14,8 +14,12 @@ public class StockVerification {
     private Integer verificationId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "initiated_by", nullable = false)
+    @JoinColumn(name = "initiated_by", nullable = true)
     private User initiatedBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "initiated_by_system_account")
+    private SystemAccount initiatedBySystemAccount;
 
     @Column(name = "scope_type", nullable = false, length = 20)
     private String scopeType = "full";
@@ -45,6 +49,11 @@ public class StockVerification {
 
     public User getInitiatedBy() { return initiatedBy; }
     public void setInitiatedBy(User initiatedBy) { this.initiatedBy = initiatedBy; }
+
+    public SystemAccount getInitiatedBySystemAccount() { return initiatedBySystemAccount; }
+    public void setInitiatedBySystemAccount(SystemAccount initiatedBySystemAccount) { 
+        this.initiatedBySystemAccount = initiatedBySystemAccount; 
+    }
 
     public String getScopeType() { return scopeType; }
     public void setScopeType(String scopeType) { this.scopeType = scopeType; }

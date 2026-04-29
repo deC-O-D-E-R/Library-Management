@@ -127,6 +127,7 @@ const StockVerification = () => {
 
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [remarks, setRemarks] = useState('');
 
     const fetchVerifications = async () => {
         try {
@@ -323,6 +324,7 @@ const StockVerification = () => {
         setScanResult(null);
         setAccessionNumber('');
         setMarkedStatus('missing');
+        setRemarks('');
         setError('');
         setShowScanModal(true);
     };
@@ -337,6 +339,7 @@ const StockVerification = () => {
                 accessionNumber: accessionNumber.trim(),
                 markedStatus,
                 assignmentId: selectedAssignmentId ? parseInt(selectedAssignmentId) : null,
+                remarks: remarks.trim() || null,
             });
             setScanResult(res.data);
             setAccessionNumber('');
@@ -625,6 +628,20 @@ const StockVerification = () => {
                             <option value="available">Available</option>
                             <option value="issued">Issued</option>
                         </select>
+                        <div className="flex flex-col gap-1.5">
+                            <label className={labelClass}>Remarks <span className="text-text-secondary normal-case">(optional)</span></label>
+                            <textarea
+                                value={remarks}
+                                onChange={(e) => {
+                                    if (e.target.value.length <= 255) setRemarks(e.target.value);
+                                }}
+                                placeholder="e.g. Found on wrong shelf"
+                                rows={2}
+                                className={inputClass}
+                                style={{ resize: 'none' }}
+                            />
+                            <p className="text-text-secondary text-xs text-right">{remarks.length}/255</p>
+                        </div>
                     </div>
 
                     {error && <p className="text-danger text-sm">{error}</p>}
@@ -700,7 +717,12 @@ const StockVerification = () => {
                                     { header: 'Accession No.', key: 'accessionNumber' },
                                     { header: 'Title', key: 'bookTitle' },
                                     { header: 'Call No.', key: 'callNumber' },
-                                    { header: 'Verifier', render: (row) => <span className="text-text-secondary text-xs">{row.verifierName ?? '—'}</span> },
+                                    {
+                                        header: 'Remarks',
+                                        render: (row) => row.remarks
+                                            ? <span className="text-text-secondary text-xs">{row.remarks}</span>
+                                            : null
+                                    },
                                     { header: 'Was', render: (row) => <Badge text={row.previousStatus} /> },
                                     {
                                         header: 'Found As',

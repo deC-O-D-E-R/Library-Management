@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Map;
 
 @Service
 public class StockVerificationService {
@@ -23,43 +24,54 @@ public class StockVerificationService {
     private final VerificationAssignmentRepository verificationAssignmentRepository;
     private final BookCopyRepository bookCopyRepository;
     private final UserRepository userRepository;
+    private final SystemAccountRepository systemAccountRepository;
 
     public StockVerificationService(StockVerificationRepository stockVerificationRepository,
                                      StockVerificationDetailRepository stockVerificationDetailRepository,
                                      VerificationAssignmentRepository verificationAssignmentRepository,
                                      BookCopyRepository bookCopyRepository,
-                                     UserRepository userRepository) {
+                                     UserRepository userRepository,
+                                     SystemAccountRepository systemAccountRepository) {
         this.stockVerificationRepository = stockVerificationRepository;
         this.stockVerificationDetailRepository = stockVerificationDetailRepository;
         this.verificationAssignmentRepository = verificationAssignmentRepository;
         this.bookCopyRepository = bookCopyRepository;
         this.userRepository = userRepository;
+        this.systemAccountRepository = systemAccountRepository;
     }
 
     //initiate a verification
     @Transactional
-    public StockVerificationResponseDTO initiateVerification(StockVerificationRequestDTO request) {
+        public StockVerificationResponseDTO initiateVerification(StockVerificationRequestDTO request) {
 
-        String staffNumber = SecurityContextHolder.getContext()
+        String username = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
-        User initiatedBy = userRepository.findByStaffNumber(staffNumber)
-                .orElseThrow(() -> new RuntimeException("Logged in user not found"));
 
         if (request.getScopeType() == null || request.getScopeType().isBlank()) {
-            throw new RuntimeException("Scope type is required: full, category or call_number");
+                throw new RuntimeException("Scope type is required: full, category or call_number");
         }
 
         if (!request.getScopeType().equals("full") &&
-            (request.getScopeValue() == null || request.getScopeValue().isBlank())) {
-            throw new RuntimeException("Scope value is required for scope type: " + request.getScopeType());
+                (request.getScopeValue() == null || request.getScopeValue().isBlank())) {
+                throw new RuntimeException("Scope value is required for scope type: " + request.getScopeType());
         }
 
         if (request.getAssignments() == null || request.getAssignments().isEmpty()) {
-            throw new RuntimeException("At least one verifier assignment is required");
+                throw new RuntimeException("At least one verifier assignment is required");
         }
 
         StockVerification verification = new StockVerification();
-        verification.setInitiatedBy(initiatedBy);
+
+        // resolve who is initiating — system account or employee
+        systemAccountRepository.findByUsername(username).ifPresentOrElse(
+                verification::setInitiatedBySystemAccount,
+                () -> {
+                        User user = userRepository.findByStaffNumber(username)
+                                .orElseThrow(() -> new RuntimeException("Logged in user not found"));
+                        verification.setInitiatedBy(user);
+                }
+        );
+
         verification.setScopeType(request.getScopeType());
         verification.setScopeValue(request.getScopeValue());
         verification.setStatus("in_progress");
@@ -67,23 +79,23 @@ public class StockVerificationService {
         StockVerification saved = stockVerificationRepository.save(verification);
 
         for (StockVerificationRequestDTO.AssignmentRequestDTO a : request.getAssignments()) {
-            User verifier = userRepository.findById(a.getUserId())
-                    .orElseThrow(() -> new RuntimeException("User not found with id: " + a.getUserId()));
+                User verifier = userRepository.findById(a.getUserId())
+                        .orElseThrow(() -> new RuntimeException("User not found with id: " + a.getUserId()));
 
-            VerificationAssignment assignment = new VerificationAssignment();
-            assignment.setStockVerification(saved);
-            assignment.setUser(verifier);
-            assignment.setName(verifier.getName());
-            assignment.setEmpId(verifier.getStaffNumber());
-            assignment.setDesignation(verifier.getDesignation());
-            assignment.setScopeType(a.getScopeType());
-            assignment.setScopeFrom(a.getScopeFrom());
-            assignment.setScopeTo(a.getScopeTo());
-            verificationAssignmentRepository.save(assignment);
+                VerificationAssignment assignment = new VerificationAssignment();
+                assignment.setStockVerification(saved);
+                assignment.setUser(verifier);
+                assignment.setName(verifier.getName());
+                assignment.setEmpId(verifier.getStaffNumber());
+                assignment.setDesignation(verifier.getDesignation());
+                assignment.setScopeType(a.getScopeType());
+                assignment.setScopeFrom(a.getScopeFrom());
+                assignment.setScopeTo(a.getScopeTo());
+                verificationAssignmentRepository.save(assignment);
         }
 
         return mapToResponseDTO(saved);
-    }
+        }
 
     //get the assigned verifiers
     public List<StockVerificationResponseDTO.AssignmentDTO> getAssignments(Integer verificationId) {
@@ -194,6 +206,7 @@ public class StockVerificationService {
         detail.setAssignment(assignment);
         detail.setPreviousStatus(previousStatus);
         detail.setMarkedStatus(request.getMarkedStatus());
+        detail.setRemarks(request.getRemarks());
         stockVerificationDetailRepository.save(detail);
 
         return mapToResponseDTO(verification);
@@ -274,7 +287,8 @@ public class StockVerificationService {
                             true,
                             d.getVerifiedAt(),
                             assignmentId,
-                            verifierName
+                            verifierName,
+                            d.getRemarks()
                     );
                 })
                 .collect(Collectors.toList());
@@ -294,8 +308,8 @@ public class StockVerificationService {
 
         return new StockVerificationResponseDTO(
                 verification.getVerificationId(),
-                verification.getInitiatedBy().getUserId(),
-                verification.getInitiatedBy().getName(),
+                resolveInitiatedById(verification),
+                resolveInitiatedByName(verification),
                 verification.getScopeType(),
                 verification.getScopeValue(),
                 verification.getStatus(),
@@ -310,6 +324,130 @@ public class StockVerificationService {
                 detailDTOs
         );
     }
+
+    public StockVerificationResponseDTO getFullVerificationReport(Integer verificationId) {
+
+        StockVerification verification = stockVerificationRepository.findById(verificationId)
+                .orElseThrow(() -> new RuntimeException("Verification not found"));
+
+        // Only books that were actively scanned
+        List<StockVerificationDetail> scannedDetails = stockVerificationDetailRepository
+                .findByStockVerification_VerificationId(verificationId);
+
+        // All assignments for this verification
+        List<VerificationAssignment> assignments = verificationAssignmentRepository
+                .findByStockVerification_VerificationId(verificationId);
+
+        // Quick lookup: copyId → detail
+        Map<Integer, StockVerificationDetail> scannedMap = scannedDetails.stream()
+                .collect(Collectors.toMap(
+                        d -> d.getBookCopy().getCopyId(),
+                        d -> d,
+                        (existing, replacement) -> existing
+                ));
+
+        // ALL copies in scope across all assignments (reuses existing matchesAssignmentScope)
+        List<BookCopy> allCopiesInScope = bookCopyRepository.findAll()
+                .stream()
+                .filter(c -> assignments.stream().anyMatch(a -> matchesAssignmentScope(c, a)))
+                .distinct()
+                .collect(Collectors.toList());
+
+        // Build DTOs for every copy in scope
+        List<StockVerificationResponseDTO.ScanDetailDTO> detailDTOs = allCopiesInScope.stream()
+                .map(copy -> {
+                        StockVerificationDetail detail = scannedMap.get(copy.getCopyId());
+                        if (detail != null) {
+                        // Was actively scanned — use recorded data
+                        String verifierName = detail.getAssignment() != null
+                                ? detail.getAssignment().getName() : null;
+                        Integer assignmentId = detail.getAssignment() != null
+                                ? detail.getAssignment().getAssignmentId() : null;
+                        return new StockVerificationResponseDTO.ScanDetailDTO(
+                                detail.getDetailId(),
+                                copy.getCopyId(),
+                                copy.getAccessionNumber(),
+                                copy.getBook().getTitle(),
+                                copy.getBook().getCallNumber(),
+                                detail.getPreviousStatus(),
+                                detail.getMarkedStatus(),
+                                !detail.getPreviousStatus().equals(detail.getMarkedStatus()),
+                                detail.getVerifiedAt(),
+                                assignmentId,
+                                verifierName,
+                                detail.getRemarks()
+                        );
+                        } else {
+                        // Not scanned — no change, markedStatus null
+                        return new StockVerificationResponseDTO.ScanDetailDTO(
+                                null,
+                                copy.getCopyId(),
+                                copy.getAccessionNumber(),
+                                copy.getBook().getTitle(),
+                                copy.getBook().getCallNumber(),
+                                copy.getStatus(),
+                                null,
+                                false,
+                                null,
+                                null,
+                                null,
+                                null
+                        );
+                        }
+                })
+                .collect(Collectors.toList());
+
+        // Counts based on scanned entries only
+        int availableCount = (int) scannedDetails.stream()
+                .filter(d -> d.getMarkedStatus().equals("available")).count();
+        int issuedCount   = (int) scannedDetails.stream()
+                .filter(d -> d.getMarkedStatus().equals("issued")).count();
+        int missingCount  = (int) scannedDetails.stream()
+                .filter(d -> d.getMarkedStatus().equals("missing")).count();
+        int damagedCount  = (int) scannedDetails.stream()
+                .filter(d -> d.getMarkedStatus().equals("damaged")).count();
+
+        List<StockVerificationResponseDTO.AssignmentDTO> assignmentDTOs =
+                buildAssignmentDTOs(verificationId, scannedDetails);
+
+        return new StockVerificationResponseDTO(
+                verification.getVerificationId(),
+                resolveInitiatedById(verification),
+                resolveInitiatedByName(verification),
+                verification.getScopeType(),
+                verification.getScopeValue(),
+                verification.getStatus(),
+                verification.getStartedAt(),
+                verification.getCompletedAt(),
+                detailDTOs.size(),  // total = all in scope, not just scanned
+                availableCount,
+                issuedCount,
+                missingCount,
+                damagedCount,
+                assignmentDTOs,
+                detailDTOs
+        );
+     }
+
+     private String resolveInitiatedByName(StockVerification verification) {
+        if (verification.getInitiatedBySystemAccount() != null) {
+                return verification.getInitiatedBySystemAccount().getAccountName();
+        } else if (verification.getInitiatedBy() != null) {
+                return verification.getInitiatedBy().getName();
+        }
+        return "Unknown";
+     }
+
+        private Integer resolveInitiatedById(StockVerification verification) {
+        if (verification.getInitiatedBySystemAccount() != null) {
+                return verification.getInitiatedBySystemAccount().getAccountId();
+        } else if (verification.getInitiatedBy() != null) {
+                return verification.getInitiatedBy().getUserId();
+        }
+        return null;
+    }
+
+        
 
     //map response to responseDTO
     private StockVerificationResponseDTO mapToResponseDTO(StockVerification verification) {
@@ -334,7 +472,8 @@ public class StockVerificationService {
                             !d.getPreviousStatus().equals(d.getMarkedStatus()),
                             d.getVerifiedAt(),
                             assignmentId,
-                            verifierName
+                            verifierName,
+                            d.getRemarks()
                     );
                 })
                 .collect(Collectors.toList());
@@ -353,8 +492,8 @@ public class StockVerificationService {
 
         return new StockVerificationResponseDTO(
                 verification.getVerificationId(),
-                verification.getInitiatedBy().getUserId(),
-                verification.getInitiatedBy().getName(),
+                resolveInitiatedById(verification),
+                resolveInitiatedByName(verification),
                 verification.getScopeType(),
                 verification.getScopeValue(),
                 verification.getStatus(),

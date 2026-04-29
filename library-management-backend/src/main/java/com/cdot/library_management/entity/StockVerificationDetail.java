@@ -33,6 +33,9 @@ public class StockVerificationDetail {
     @Column(name = "verified_at", nullable = false, updatable = false)
     private LocalDateTime verifiedAt;
 
+    @Column(name = "remarks", length = 255)
+    private String remarks;
+
     @PrePersist
     protected void onCreate() {
         verifiedAt = LocalDateTime.now();
@@ -58,4 +61,8 @@ public class StockVerificationDetail {
 
     public LocalDateTime getVerifiedAt() { return verifiedAt; }
     public void setVerifiedAt(LocalDateTime verifiedAt) { this.verifiedAt = verifiedAt; }
+
+    public String getRemarks() { return remarks; }
+    public void setRemarks(String remarks) { this.remarks = remarks; }
+    
 }
