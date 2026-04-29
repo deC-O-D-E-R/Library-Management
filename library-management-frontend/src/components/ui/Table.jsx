@@ -1,4 +1,4 @@
-const Table = ({ columns, data, emptyMessage = 'No data found' }) => {
+const Table = ({ columns, data, emptyMessage = 'No data found', onRowClick, highlightRow }) => {
     return (
         <div className="w-full overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-sm">
@@ -28,7 +28,13 @@ const Table = ({ columns, data, emptyMessage = 'No data found' }) => {
                         data.map((row, i) => (
                             <tr
                                 key={i}
-                                className="border-b border-border hover:bg-sidebar transition-colors duration-150"
+                                onClick={() => onRowClick?.(row)}
+                                className={`border-b border-border transition-colors duration-150
+                                    ${onRowClick ? 'cursor-pointer' : ''}
+                                    ${highlightRow?.(row)
+                                        ? 'bg-accent/10 border-l-2 border-l-accent'
+                                        : 'hover:bg-sidebar'
+                                    }`}
                             >
                                 {columns.map((col, j) => (
                                     <td key={j} className="px-4 py-3 text-text-primary">

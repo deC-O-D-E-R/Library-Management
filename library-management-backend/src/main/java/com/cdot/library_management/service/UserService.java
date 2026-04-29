@@ -57,6 +57,14 @@ public class UserService {
             throw new RuntimeException("Email already exists: " + request.getEmail());
         }
 
+        if (request.getRoles() != null) {
+            boolean hasRestrictedRole = request.getRoles().stream()
+                    .anyMatch(r -> r.equals("ADMIN") || r.equals("LIBRARIAN"));
+            if (hasRestrictedRole) {
+                throw new RuntimeException("Admin and Librarian accounts must be created from System Users.");
+            }
+        }
+
         User user = new User();
         user.setName(request.getName());
         user.setStaffNumber(request.getStaffNumber());
@@ -107,6 +115,12 @@ public class UserService {
         User savedUser = userRepository.save(user);
 
         if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+
+            boolean hasRestrictedRole = request.getRoles().stream()
+                    .anyMatch(r -> r.equals("ADMIN") || r.equals("LIBRARIAN"));
+            if (hasRestrictedRole) {
+                throw new RuntimeException("Admin and Librarian accounts must be created from System Users.");
+            }
 
             userRoleRepository.deleteByUser_UserId(userId);
             userRoleRepository.flush();
@@ -373,6 +387,10 @@ public class UserService {
                 ? List.of(cols[7].trim().split(";"))
                 : List.of("EMPLOYEE")
         );
+
+        if (dto.getRoles().contains("ADMIN") || dto.getRoles().contains("LIBRARIAN")) {
+            throw new RuntimeException("Cannot assign ADMIN or LIBRARIAN role via bulk upload.");
+        }
 
         return dto;
     }

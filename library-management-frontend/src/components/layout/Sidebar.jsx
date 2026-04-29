@@ -4,7 +4,8 @@ import {
     LayoutDashboard, Users, BookOpen, Tag, BarChart3,
     Settings, BookCheck, RotateCcw, List,
     Banknote, PackageSearch, Search, BookMarked, Receipt,
-    BookmarkCheck, FileDown, ExternalLink, ScrollText 
+    BookmarkCheck, FileDown, ExternalLink, ScrollText, 
+    ShieldCheck  
 } from 'lucide-react';
 
 const NavItem = ({ to, icon: Icon, label, external }) => {
@@ -57,6 +58,7 @@ const Sidebar = () => {
         { to: '/admin/fines', icon: Banknote, label: 'Fines' },
         { to: '/admin/stock', icon: PackageSearch, label: 'Stock Verification' },
         { to: '/admin/config', icon: Settings, label: 'System Config' },
+        { to: '/admin/system-users', icon: ShieldCheck, label: 'System Users' },
     ];
 
     const librarianLinks = [

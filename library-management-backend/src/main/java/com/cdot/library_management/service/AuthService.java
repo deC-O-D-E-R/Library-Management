@@ -93,6 +93,10 @@ public class AuthService {
                 .map(ur -> ur.getRole().getRoleName())
                 .collect(Collectors.toList());
 
+        if (roles.contains("ADMIN") || roles.contains("LIBRARIAN")) {
+            throw new RuntimeException("Please use the Admin/Librarian login.");
+        }
+
         String token = jwtUtil.generateToken(user.getStaffNumber(), roles);
 
         return new LoginResponse(token, user.getStaffNumber(), user.getName(), user.getEmail(), roles);

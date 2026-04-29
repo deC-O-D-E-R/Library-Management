@@ -236,8 +236,6 @@ const AdminUsers = () => {
                             className="bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
                         >
                             <option value="EMPLOYEE">Employee</option>
-                            <option value="LIBRARIAN">Librarian</option>
-                            <option value="ADMIN">Admin</option>
                         </select>
                     </div>
                 </div>

@@ -13,6 +13,7 @@ import AdminFines from './pages/admin/Fines';
 import AdminStockVerification from './pages/admin/StockVerification';
 import AdminNotifications from './pages/admin/Notifications';
 import AdminConfig from './pages/admin/Config';
+import SystemUsers from './pages/admin/SystemUsers';
 
 import LibrarianDashboard from './pages/librarian/Dashboard';
 import SearchBooksLibrarian from './pages/librarian/SearchBooksLibrarian';
@@ -68,6 +69,7 @@ const AppRoutes = () => {
             <Route path="/admin/stock" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminStockVerification /></ProtectedRoute>} />
             <Route path="/admin/notifications" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminNotifications /></ProtectedRoute>} />
             <Route path="/admin/config" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminConfig /></ProtectedRoute>} />
+            <Route path="/admin/system-users" element={<ProtectedRoute allowedRoles={['ADMIN']}><SystemUsers /></ProtectedRoute>} />
 
             {/* Librarian Routes */}
             <Route path="/librarian/dashboard" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><LibrarianDashboard /></ProtectedRoute>} />
