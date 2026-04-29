@@ -28,8 +28,12 @@ public class Fine {
     private LocalDate paidDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "collected_by")
+    @JoinColumn(name = "collected_by", nullable = true)
     private User collectedBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "collected_by_system_account")
+    private SystemAccount collectedBySystemAccount;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -57,6 +61,11 @@ public class Fine {
 
     public User getCollectedBy() { return collectedBy; }
     public void setCollectedBy(User collectedBy) { this.collectedBy = collectedBy; }
+
+    public SystemAccount getCollectedBySystemAccount() { return collectedBySystemAccount; }
+    public void setCollectedBySystemAccount(SystemAccount collectedBySystemAccount) {
+        this.collectedBySystemAccount = collectedBySystemAccount;
+    }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

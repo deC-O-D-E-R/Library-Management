@@ -22,8 +22,12 @@ public class Circulation {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "issued_by", nullable = false)
+    @JoinColumn(name = "issued_by", nullable = true)
     private User issuedBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "issued_by_system_account")
+    private SystemAccount issuedBySystemAccount;
 
     @Column(name = "issue_date", nullable = false)
     private LocalDate issueDate;
@@ -60,6 +64,11 @@ public class Circulation {
 
     public User getIssuedBy() { return issuedBy; }
     public void setIssuedBy(User issuedBy) { this.issuedBy = issuedBy; }
+
+    public SystemAccount getIssuedBySystemAccount() { return issuedBySystemAccount; }
+    public void setIssuedBySystemAccount(SystemAccount issuedBySystemAccount) {
+        this.issuedBySystemAccount = issuedBySystemAccount;
+    }
 
     public LocalDate getIssueDate() { return issueDate; }
     public void setIssueDate(LocalDate issueDate) { this.issueDate = issueDate; }

@@ -26,6 +26,7 @@ public class CirculationService {
     private final SystemConfigService systemConfigService;
     private final EmailService emailService;
     private final ReservationService reservationService;
+    private final SystemAccountRepository systemAccountRepository;
 
     public CirculationService(CirculationRepository circulationRepository,
                            BookCopyRepository bookCopyRepository,
@@ -33,6 +34,7 @@ public class CirculationService {
                             FineRepository fineRepository,
                             SystemConfigService systemConfigService,
                             ReservationService reservationService,
+                            SystemAccountRepository systemAccountRepository,
                             @Autowired(required = false) EmailService emailService) {
         this.circulationRepository = circulationRepository;
         this.bookCopyRepository = bookCopyRepository;
@@ -40,6 +42,7 @@ public class CirculationService {
         this.fineRepository = fineRepository;
         this.systemConfigService = systemConfigService;
         this.reservationService = reservationService;
+        this.systemAccountRepository = systemAccountRepository;
         this.emailService = emailService;
     }
 
@@ -69,10 +72,8 @@ public class CirculationService {
             throw new RuntimeException("User has reached maximum book limit of " + maxBooks);
         }
 
-        String issuedByStaffNumber = SecurityContextHolder.getContext()
+        String username = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
-        User issuedBy = userRepository.findByStaffNumber(issuedByStaffNumber)
-                .orElseThrow(() -> new RuntimeException("Logged in user not found"));
 
         LocalDate issueDate = request.getIssueDate() != null
                 ? request.getIssueDate() : LocalDate.now();
@@ -82,9 +83,17 @@ public class CirculationService {
                 : issueDate.plusDays(systemConfigService.getLoanPeriodDays());
 
         Circulation circulation = new Circulation();
+        systemAccountRepository.findByUsername(username).ifPresentOrElse(
+                circulation::setIssuedBySystemAccount,
+                () -> {
+                    User issuedBy = userRepository.findByStaffNumber(username)
+                            .orElseThrow(() -> new RuntimeException("Logged in user not found"));
+                    circulation.setIssuedBy(issuedBy);
+                }
+        );
+
         circulation.setBookCopy(copy);
         circulation.setUser(user);
-        circulation.setIssuedBy(issuedBy);
         circulation.setIssueDate(issueDate);
         circulation.setDueDate(dueDate);
         circulation.setStatus("issued");
@@ -205,6 +214,24 @@ public class CirculationService {
                 .collect(Collectors.toList());
     }
 
+    private String resolveIssuedByName(Circulation circulation) {
+        if (circulation.getIssuedBySystemAccount() != null) {
+            return circulation.getIssuedBySystemAccount().getAccountName();
+        } else if (circulation.getIssuedBy() != null) {
+            return circulation.getIssuedBy().getName();
+        }
+        return "Unknown";
+    }
+
+    private Integer resolveIssuedById(Circulation circulation) {
+        if (circulation.getIssuedBySystemAccount() != null) {
+            return circulation.getIssuedBySystemAccount().getAccountId();
+        } else if (circulation.getIssuedBy() != null) {
+            return circulation.getIssuedBy().getUserId();
+        }
+        return null;
+    }
+
     //map Circulation entity to CirculationResponseDTO
     private CirculationResponseDTO mapToResponseDTO(Circulation circulation) {
         return new CirculationResponseDTO(
@@ -217,8 +244,8 @@ public class CirculationService {
                 circulation.getUser().getUserId(),
                 circulation.getUser().getName(),
                 circulation.getUser().getStaffNumber(),
-                circulation.getIssuedBy().getUserId(),
-                circulation.getIssuedBy().getName(),
+                resolveIssuedById(circulation),
+                resolveIssuedByName(circulation),
                 circulation.getRemark(),
                 circulation.getIssueDate(),
                 circulation.getDueDate(),
