@@ -4,6 +4,15 @@ import axiosInstance from './axios';
 export const login = (credentials) =>
     axiosInstance.post('/auth/login', credentials);
 
+export const forgotPassword = (staffNumber) =>
+    axiosInstance.post(`/auth/forgot-password?staffNumber=${staffNumber}`);
+
+export const verifyOtp = (staffNumber, otp) =>
+    axiosInstance.post(`/auth/verify-otp?staffNumber=${staffNumber}&otp=${otp}`);
+
+export const resetPassword = (staffNumber, otp, newPassword) =>
+    axiosInstance.post(`/auth/reset-password?staffNumber=${staffNumber}&otp=${otp}&newPassword=${newPassword}`);
+
 //users
 export const getAllUsers = () =>
     axiosInstance.get('/admin/users');

@@ -106,6 +106,20 @@ public class EmailService {
         sendEmail(toEmail, subject, body);
     }
 
+    @Async
+    public void sendOtpEmail(String to, String name, String otp) {
+
+        String subject = "CDOT Library — Password Reset OTP";
+
+        String body = "Dear " + name + ",\n\n"
+                + "Your OTP for password reset is: " + otp + "\n\n"
+                + "This OTP is valid for 10 minutes.\n\n"
+                + "If you did not request this, please ignore this email.\n\n"
+                + "Regards,\nCDOT Library";
+
+        sendEmail(to, subject, body);
+    }
+
     private void sendEmail(String toEmail, String subject, String body) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
