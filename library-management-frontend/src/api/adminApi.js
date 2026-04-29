@@ -130,3 +130,20 @@ export const getOverdueReport = () =>
 
 export const getStockVerificationReport = (verificationId) =>
     axiosInstance.get(`/admin/reports/stock-verification/${verificationId}`);
+
+//file handling
+export const uploadRulesPdf = (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return axiosInstance.post('/admin/config/files/rules', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};
+
+export const uploadBookRequestPdf = (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return axiosInstance.post('/admin/config/files/book-request', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};

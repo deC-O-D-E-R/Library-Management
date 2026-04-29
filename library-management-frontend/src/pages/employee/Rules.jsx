@@ -1,12 +1,27 @@
 import Layout from '../../components/layout/Layout';
 import Button from '../../components/ui/Button';
+import { downloadRulesPdf } from '../../api/userApi';
 
 const Rules = () => {
-    const handleDownload = () => {
-        const link = document.createElement('a');
-        link.href = '/rules-and-regulations.pdf';
-        link.download = 'Rules_and_Regulations.pdf';
-        link.click();
+
+    const handleDownload = async () => {
+        try {
+            const response = await downloadRulesPdf();
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'Rules_and_Regulations.pdf');
+
+            document.body.appendChild(link);
+            link.click();
+
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error downloading rules PDF:', error);
+        }
     };
 
     return (

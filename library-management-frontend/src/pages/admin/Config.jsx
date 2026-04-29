@@ -3,7 +3,7 @@ import { Settings, Save } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import Button from '../../components/ui/Button';
 import Loader from '../../components/ui/Loader';
-import { getAllConfigs, updateConfig } from '../../api/adminApi';
+import { getAllConfigs, updateConfig, uploadRulesPdf, uploadBookRequestPdf } from '../../api/adminApi';
 
 const configLabels = {
     max_books_per_user: {
@@ -40,6 +40,7 @@ const AdminConfig = () => {
     const [saving, setSaving] = useState('');
     const [saved, setSaved] = useState('');
     const [showToggleConfirm, setShowToggleConfirm] = useState(false);
+    const [uploading, setUploading] = useState('');
 
     const fetchConfigs = async () => {
         try {
@@ -84,6 +85,27 @@ const AdminConfig = () => {
         } finally {
             setSaving('');
             setShowToggleConfirm(false);
+        }
+    };
+
+    const handleUpload = async (type, file) => {
+        if (!file) return;
+
+        setUploading(type);
+
+        try {
+            if (type === 'rules') {
+                await uploadRulesPdf(file);
+            } else if (type === 'book-request') {
+                await uploadBookRequestPdf(file);
+            }
+
+            alert('Uploaded successfully');
+        } catch (err) {
+            console.error(err);
+            alert('Upload failed');
+        } finally {
+            setUploading('');
         }
     };
 
@@ -190,6 +212,71 @@ const AdminConfig = () => {
                                 }`} />
                         </button>
                     </div>
+                </div>
+
+                {/* PDF Configs */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                    {/* Book Request PDF */}
+                    <div className="bg-surface border border-border rounded-xl p-5 flex flex-col gap-4">
+
+                        <div className="flex items-start gap-3">
+                            <div className="w-9 h-9 bg-opacity-40 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <Settings size={20} className="text-accent" />
+                            </div>
+
+                            <div>
+                                <p className="text-text-primary font-semibold text-sm">
+                                    Book Request Form PDF
+                                </p>
+                                <p className="text-text-secondary text-xs mt-0.5">
+                                    Upload updated request form (replaces existing file)
+                                </p>
+                            </div>
+                        </div>
+
+                        <input
+                            type="file"
+                            accept="application/pdf"
+                            onChange={(e) => handleUpload('book-request', e.target.files[0])}
+                            className="text-sm text-text-secondary"
+                        />
+
+                        {uploading === 'book-request' && (
+                            <p className="text-xs text-accent">Uploading...</p>
+                        )}
+                    </div>
+
+                    {/* Rules PDF */}
+                    <div className="bg-surface border border-border rounded-xl p-5 flex flex-col gap-4">
+
+                        <div className="flex items-start gap-3">
+                            <div className="w-9 h-9 bg-opacity-40 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <Settings size={20} className="text-accent" />
+                            </div>
+
+                            <div>
+                                <p className="text-text-primary font-semibold text-sm">
+                                    Library Rules PDF
+                                </p>
+                                <p className="text-text-secondary text-xs mt-0.5">
+                                    Upload updated rules document (replaces existing file)
+                                </p>
+                            </div>
+                        </div>
+
+                        <input
+                            type="file"
+                            accept="application/pdf"
+                            onChange={(e) => handleUpload('rules', e.target.files[0])}
+                            className="text-sm text-text-secondary"
+                        />
+
+                        {uploading === 'rules' && (
+                            <p className="text-xs text-accent">Uploading...</p>
+                        )}
+                    </div>
+
                 </div>
 
                 {/* Confirmation Dialog */}

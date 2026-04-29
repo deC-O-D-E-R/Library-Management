@@ -16,6 +16,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @RestController
 @RequestMapping("/employee")
@@ -134,4 +141,39 @@ public class EmployeeController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/files/{type}")
+    public ResponseEntity<?> downloadFile(@PathVariable String type) {
+        try {
+            String configKey;
+
+            if ("rules".equalsIgnoreCase(type)) {
+                configKey = "rules_pdf_path";
+            } else if ("book-request".equalsIgnoreCase(type)) {
+                configKey = "book_request_pdf_path";
+            } else {
+                return ResponseEntity.badRequest().build();
+            }
+
+            String filePath = systemConfigService.getValue(configKey);
+
+            Path path = Paths.get(filePath).toAbsolutePath().normalize();
+            Resource resource = new UrlResource(path.toUri());
+
+            if (!resource.exists()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            return ResponseEntity
+                .ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=" + type + ".pdf")
+                .body(resource);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Invalid file type");
+        }
+    }
+
 }

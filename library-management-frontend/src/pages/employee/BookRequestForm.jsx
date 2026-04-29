@@ -1,12 +1,27 @@
 import Layout from '../../components/layout/Layout';
 import Button from '../../components/ui/Button';
+import { downloadBookRequestPdf } from '../../api/userApi';
 
 const BookRequestForm = () => {
-    const handleDownload = () => {
-        const link = document.createElement('a');
-        link.href = '/book-request-form.pdf';
-        link.download = 'Book_Request_Form.pdf';
-        link.click();
+
+    const handleDownload = async () => {
+        try {
+            const response = await downloadBookRequestPdf();
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'Book_Request_Form.pdf');
+
+            document.body.appendChild(link);
+            link.click();
+
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error downloading book request PDF:', error);
+        }
     };
 
     return (

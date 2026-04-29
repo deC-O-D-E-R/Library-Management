@@ -35,6 +35,13 @@ export const cancelReservation = (reservationId) =>
 export const getMyReservations = () =>
     axiosInstance.get('/employee/reservations/my');
 
+//files
+export const downloadRulesPdf = () =>
+    axiosInstance.get('/employee/files/rules', { responseType: 'blob' });
+
+export const downloadBookRequestPdf = () =>
+    axiosInstance.get('/employee/files/book-request', { responseType: 'blob' });
+
 //circulation (librarian)
 export const getLibrarianBookById = (bookId) =>
     axiosInstance.get(`/librarian/circulation/books/${bookId}`);
