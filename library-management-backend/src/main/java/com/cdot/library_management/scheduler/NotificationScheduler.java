@@ -13,14 +13,14 @@ public class NotificationScheduler {
         this.notificationService = notificationService;
     }
 
-    // Runs every day at 8:00 AM
+    //runs every day at 8:00 AM
     @Scheduled(cron = "0 0 8 * * *")
     public void sendDueReminders() {
         int count = notificationService.sendDueReminders();
         System.out.println("Due reminders sent: " + count + " on " + java.time.LocalDate.now());
     }
 
-    // Runs every day at 9:00 AM
+    //runs every day at 9:00 AM
     @Scheduled(cron = "0 0 9 * * *")
     public void processOverdue() {
         int count = notificationService.processOverdue();

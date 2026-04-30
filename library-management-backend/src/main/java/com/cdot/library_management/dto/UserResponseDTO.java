@@ -19,7 +19,6 @@ public class UserResponseDTO {
     private LocalDateTime updatedAt;
     private List<String> roles;
 
-    // Constructor
     public UserResponseDTO(Integer userId, String name, String staffNumber,
                            String designation, String email, LocalDate dateOfJoining,
                            LocalDate dateOfSuperannuation, LocalDate dateOfResignation,

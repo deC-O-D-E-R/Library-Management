@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
+import { getMySystemAccount } from '../api/systemApi';
 
 export const AuthContext = createContext(null);
 
@@ -24,6 +25,34 @@ export const AuthProvider = ({ children }) => {
 
         setLoading(false);
     }, []);
+
+    //polling for Librarian permissions upload
+    useEffect(() => {
+        if (!user || !user.roles?.includes('LIBRARIAN')) return;
+
+        const poll = async () => {
+            try {
+                const res = await getMySystemAccount();
+                const freshPermissions = res.data.permissions;
+
+                const current = user.permissions || [];
+                const same = current.length === freshPermissions.length &&
+                    current.every(p => freshPermissions.includes(p));
+
+                if (!same) {
+                    const updatedUser = { ...user, permissions: freshPermissions };
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                    setUser(updatedUser);
+                }
+            } catch {
+                //silently ignore
+            }
+        };
+
+        poll();
+        const interval = setInterval(poll, 30000);
+        return () => clearInterval(interval);
+    }, [user?.roles]);
 
     const isTokenExpired = (token) => {
         try {

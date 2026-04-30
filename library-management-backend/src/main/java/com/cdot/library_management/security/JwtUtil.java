@@ -24,7 +24,7 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    // Generate token with staffNumber and roles
+    //generate token with staffNumber and roles
     public String generateToken(String staffNumber, List<String> roles) {
         return Jwts.builder()
                 .subject(staffNumber)
@@ -35,28 +35,28 @@ public class JwtUtil {
                 .compact();
     }
 
-    // Extract staffNumber from token
+    //extract staffNumber from token
     public String extractStaffNumber(String token) {
         return extractAllClaims(token).getSubject();
     }
 
-    // Extract roles from token
+    //extract roles from token
     @SuppressWarnings("unchecked")
     public List<String> extractRoles(String token) {
         return extractAllClaims(token).get("roles", List.class);
     }
 
-    // Check if token is expired
+    //check if token is expired
     public boolean isTokenExpired(String token) {
         return extractAllClaims(token).getExpiration().before(new Date());
     }
 
-    // Validate token against staffNumber
+    //validate token against staffNumber
     public boolean validateToken(String token, String staffNumber) {
         return extractStaffNumber(token).equals(staffNumber) && !isTokenExpired(token);
     }
 
-    // Extract all claims
+    //extract all claims
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())

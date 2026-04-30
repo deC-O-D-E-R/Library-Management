@@ -13,6 +13,9 @@ export const systemVerifyOtp = (username, otp) =>
 export const systemResetPassword = (username, otp, newPassword) =>
     axiosInstance.post(`/system/auth/reset-password?username=${username}&otp=${otp}&newPassword=${newPassword}`);
 
+export const getMySystemAccount = () =>
+    axiosInstance.get('/system/auth/me');
+
 // system accounts
 export const getAllSystemAccounts = () =>
     axiosInstance.get('/admin/system-accounts');

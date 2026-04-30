@@ -6,6 +6,7 @@ import Table from '../../components/ui/Table';
 import Modal from '../../components/ui/Modal';
 import Badge from '../../components/ui/Badge';
 import Loader from '../../components/ui/Loader';
+import useAuth from '../../hooks/useAuth';
 import {
     getIssuedCirculations, getOverdueCirculations,
     getPendingFines, getLibrarianBookById
@@ -25,6 +26,10 @@ const StatCard = ({ icon: Icon, label, value, color }) => (
 );
 
 const LibrarianDashboard = () => {
+    const { user } = useAuth();
+    const permissions = user?.permissions || [];
+    const has = (key) => permissions.includes(key);
+
     const [issued, setIssued] = useState([]);
     const [overdue, setOverdue] = useState([]);
     const [pendingFines, setPendingFines] = useState([]);
@@ -34,20 +39,20 @@ const LibrarianDashboard = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            try {
-                const [issuedRes, overdueRes, finesRes] = await Promise.all([
-                    getIssuedCirculations(),
-                    getOverdueCirculations(),
-                    getPendingFines(),
-                ]);
-                setIssued(issuedRes.data);
-                setOverdue(overdueRes.data);
-                setPendingFines(finesRes.data);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
+            const results = await Promise.allSettled([
+                has('ISSUE_RETURN_BOOKS') ? getIssuedCirculations() : Promise.resolve(null),
+                has('ISSUE_RETURN_BOOKS') ? getOverdueCirculations() : Promise.resolve(null),
+                has('MANAGE_FINES') ? getPendingFines() : Promise.resolve(null),
+            ]);
+
+            if (results[0].status === 'fulfilled' && results[0].value)
+                setIssued(results[0].value.data);
+            if (results[1].status === 'fulfilled' && results[1].value)
+                setOverdue(results[1].value.data);
+            if (results[2].status === 'fulfilled' && results[2].value)
+                setPendingFines(results[2].value.data);
+
+            setLoading(false);
         };
         fetchData();
     }, []);
@@ -66,10 +71,8 @@ const LibrarianDashboard = () => {
         {
             header: 'Book',
             render: (row) => (
-                <button
-                    onClick={() => handleViewBook(row.bookId)}
-                    className="hover:underline text-left font-medium"
-                >
+                <button onClick={() => handleViewBook(row.bookId)}
+                    className="hover:underline text-left font-medium">
                     {row.bookTitle}
                 </button>
             )
@@ -95,62 +98,55 @@ const LibrarianDashboard = () => {
         <Layout>
             <div className="flex flex-col gap-6">
 
-                {/* Header */}
                 <div>
                     <h1 className="text-text-primary text-2xl font-bold">Dashboard</h1>
-                    <p className="text-text-secondary text-sm mt-1">
-                        Library circulation overview
-                    </p>
+                    <p className="text-text-secondary text-sm mt-1">Library circulation overview</p>
                 </div>
 
-                {/* Stats */}
+                {/* Stats — only show what librarian has access to */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <StatCard
-                        icon={BookCheck}
-                        label="Currently Issued"
-                        value={issued.length}
-                        color="bg-accent"
-                    />
-                    <StatCard
-                        icon={AlertTriangle}
-                        label="Overdue Books"
-                        value={overdue.length}
-                        color="bg-danger"
-                    />
-                    <StatCard
-                        icon={Banknote}
-                        label="Pending Fines"
-                        value={pendingFines.length}
-                        color="bg-warning"
-                    />
+                    {has('ISSUE_RETURN_BOOKS') && (
+                        <StatCard icon={BookCheck} label="Currently Issued"
+                            value={issued.length} color="bg-accent" />
+                    )}
+                    {has('ISSUE_RETURN_BOOKS') && (
+                        <StatCard icon={AlertTriangle} label="Overdue Books"
+                            value={overdue.length} color="bg-danger" />
+                    )}
+                    {has('MANAGE_FINES') && (
+                        <StatCard icon={Banknote} label="Pending Fines"
+                            value={pendingFines.length} color="bg-warning" />
+                    )}
                 </div>
 
-                {/* Issued Books */}
-                <Card title="Currently Issued Books">
-                    <Table
-                        columns={circulationColumns}
-                        data={issued.slice(0, 5)}
-                        emptyMessage="No books currently issued"
-                    />
-                </Card>
+                {/* Tables — only show if permission exists */}
+                {has('ISSUE_RETURN_BOOKS') && (
+                    <Card title="Currently Issued Books">
+                        <Table columns={circulationColumns} data={issued.slice(0, 5)}
+                            emptyMessage="No books currently issued" />
+                    </Card>
+                )}
 
-                {/* Overdue Books */}
-                <Card title="Overdue Books">
-                    <Table
-                        columns={overdueColumns}
-                        data={overdue.slice(0, 5)}
-                        emptyMessage="No overdue books"
-                    />
-                </Card>
+                {has('ISSUE_RETURN_BOOKS') && (
+                    <Card title="Overdue Books">
+                        <Table columns={overdueColumns} data={overdue.slice(0, 5)}
+                            emptyMessage="No overdue books" />
+                    </Card>
+                )}
+
+                {/* Fallback if no permissions */}
+                {!has('ISSUE_RETURN_BOOKS') && !has('MANAGE_FINES') && (
+                    <Card title="Dashboard">
+                        <p className="text-text-secondary text-sm py-4 text-center">
+                            No data available. Contact admin to assign permissions.
+                        </p>
+                    </Card>
+                )}
 
             </div>
 
-            <Modal
-                isOpen={showBookModal}
-                onClose={() => setShowBookModal(false)}
-                title="Book Details"
-                size="lg"
-            >
+            <Modal isOpen={showBookModal} onClose={() => setShowBookModal(false)}
+                title="Book Details" size="lg">
                 {selectedBook && (
                     <div className="flex flex-col gap-5">
                         <div className="grid grid-cols-2 gap-3">
@@ -181,7 +177,8 @@ const LibrarianDashboard = () => {
                             <div>
                                 <p className="text-text-secondary text-xs uppercase tracking-wider">Receipt Date</p>
                                 <p className="text-text-primary mt-1">
-                                    {selectedBook.receiptDate ? new Date(selectedBook.receiptDate).toLocaleDateString() : '—'}
+                                    {selectedBook.receiptDate
+                                        ? new Date(selectedBook.receiptDate).toLocaleDateString() : '—'}
                                 </p>
                             </div>
                             <div>
@@ -189,7 +186,6 @@ const LibrarianDashboard = () => {
                                 <p className="text-text-primary mt-1">{selectedBook.totalCopies}</p>
                             </div>
                         </div>
-
                         <div className="flex gap-3">
                             <div className="bg-sidebar rounded-lg px-4 py-3 flex-1 text-center">
                                 <p className="text-text-secondary text-xs">Total</p>
@@ -204,12 +200,12 @@ const LibrarianDashboard = () => {
                                 <p className="text-warning text-xl font-bold">{selectedBook.issuedCopies}</p>
                             </div>
                         </div>
-
                         <div>
                             <p className="text-text-primary font-semibold text-sm mb-2">All Copies</p>
                             <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
                                 {selectedBook.copies?.map((copy) => (
-                                    <div key={copy.copyId} className="flex items-center justify-between bg-sidebar px-3 py-2 rounded-lg">
+                                    <div key={copy.copyId}
+                                        className="flex items-center justify-between bg-sidebar px-3 py-2 rounded-lg">
                                         <div className="flex items-center gap-3">
                                             <BookOpen size={14} className="text-text-secondary" />
                                             <span className="text-text-primary text-sm">{copy.accessionNumber}</span>
@@ -222,7 +218,6 @@ const LibrarianDashboard = () => {
                     </div>
                 )}
             </Modal>
-
         </Layout>
     );
 };

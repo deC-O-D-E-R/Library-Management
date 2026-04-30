@@ -5,15 +5,29 @@ import com.cdot.library_management.dto.SystemLoginResponse;
 import com.cdot.library_management.service.SystemAuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.cdot.library_management.entity.SystemAccount;
+import com.cdot.library_management.repository.SystemAccountRepository;
+import com.cdot.library_management.service.PermissionService;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/system/auth")
 public class SystemAuthController {
 
     private final SystemAuthService systemAuthService;
+    private final SystemAccountRepository systemAccountRepository;
+    private final PermissionService permissionService;
 
-    public SystemAuthController(SystemAuthService systemAuthService) {
+    public SystemAuthController(SystemAuthService systemAuthService,
+                                SystemAccountRepository systemAccountRepository,
+                                PermissionService permissionService) {
         this.systemAuthService = systemAuthService;
+        this.systemAccountRepository = systemAccountRepository;
+        this.permissionService = permissionService;
     }
 
     @PostMapping("/login")
@@ -60,5 +74,18 @@ public class SystemAuthController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getMe() {
+        String username = SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+
+        SystemAccount account = systemAccountRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        List<String> permissions = permissionService.getPermissionKeys(account.getAccountId());
+
+        return ResponseEntity.ok(Map.of("permissions", permissions));
     }
 }
