@@ -28,7 +28,7 @@ const Login = () => {
         setError('');
     };
 
-    // ── Unified Login ──
+    //unified login
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!form.username || !form.password) { setError('Please enter your username and password'); return; }
@@ -40,7 +40,7 @@ const Login = () => {
             });
             const data = res.data;
 
-            // system account (admin/librarian)
+            //system account (admin/librarian)
             if (data.role === 'ADMIN' || data.role === 'LIBRARIAN') {
                 setAuth({
                     name: data.accountName,
@@ -52,7 +52,7 @@ const Login = () => {
                 if (data.role === 'ADMIN') navigate('/admin/dashboard');
                 else navigate('/librarian/dashboard');
             } else {
-                // employee
+                //employee
                 setAuth({
                     name: data.name,
                     staffNumber: data.staffNumber,
@@ -68,8 +68,8 @@ const Login = () => {
         }
     };
 
-    // ── Forgot Password ──
-    // We don't know if it's employee or system — try system first, fall back to employee
+    //forgot password
+    //we don't know if it's employee or system — try system first, fall back to employee
     const handleForgotPassword = async (e) => {
         e.preventDefault();
         if (!fpIdentifier.trim()) { setError('Please enter your username'); return; }

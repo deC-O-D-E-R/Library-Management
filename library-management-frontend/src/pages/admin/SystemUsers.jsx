@@ -45,7 +45,7 @@ const SystemUsers = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [form, setForm] = useState(emptyForm(user?.email || ''));
 
-    // permissions editing in details panel
+    //permissions editing in details panel
     const [editingPermissions, setEditingPermissions] = useState([]);
     const [permSaving, setPermSaving] = useState(false);
     const [permSuccess, setPermSuccess] = useState('');
@@ -58,7 +58,7 @@ const SystemUsers = () => {
             const res = await getAllSystemAccounts();
             setAccounts(res.data);
         } catch {
-            // handled by empty state
+            //handled by empty state
         } finally {
             setLoading(false);
         }
@@ -69,7 +69,7 @@ const SystemUsers = () => {
         setFormError('');
     };
 
-    // toggle permission in create form
+    //toggle permission in create form
     const toggleFormPermission = (key) => {
         setForm(prev => ({
             ...prev,
@@ -79,7 +79,7 @@ const SystemUsers = () => {
         }));
     };
 
-    // toggle permission in details panel
+    //toggle permission in details panel
     const toggleEditPermission = (key) => {
         setEditingPermissions(prev =>
             prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]

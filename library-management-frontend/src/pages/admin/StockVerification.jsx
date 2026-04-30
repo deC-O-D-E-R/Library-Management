@@ -24,7 +24,7 @@ const formatScope = (a) => {
     return 'Full Library';
 };
 
-// ── Scope dropdown cell ───────────────────────────────────────────────────
+//scope dropdown cell
 const ScopeCell = ({ assignments }) => {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
@@ -41,7 +41,7 @@ const ScopeCell = ({ assignments }) => {
         return <span className="text-text-secondary text-xs">—</span>;
     }
 
-    // 👇 Show first assignment scope as summary
+    //show first assignment scope as summary
     const a = assignments[0];
 
     const scopeLabel =
@@ -99,7 +99,7 @@ const StockVerification = () => {
     const [verifications, setVerifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Initiate modal
+    //initiate modal
     const [categories, setCategories] = useState([]);
     const [showInitiateModal, setShowInitiateModal] = useState(false);
     const [availableUsers, setAvailableUsers] = useState([]);
@@ -108,11 +108,11 @@ const StockVerification = () => {
         userId: '', scopeType: 'call_number_range', scopeFrom: '', scopeTo: ''
     });
 
-    // Print modal
+    //print modal
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [printVerification, setPrintVerification] = useState(null);
 
-    // Enter results modal
+    //enter results modal
     const [showScanModal, setShowScanModal] = useState(false);
     const [activeVerification, setActiveVerification] = useState(null);
     const [activeAssignments, setActiveAssignments] = useState([]);
@@ -121,7 +121,7 @@ const StockVerification = () => {
     const [selectedAssignmentId, setSelectedAssignmentId] = useState('');
     const [scanResult, setScanResult] = useState(null);
 
-    // Report modal
+    //report modal
     const [showReportModal, setShowReportModal] = useState(false);
     const [report, setReport] = useState(null);
 
@@ -142,7 +142,7 @@ const StockVerification = () => {
 
     useEffect(() => { fetchVerifications(); }, []);
 
-    // ── Initiate ──────────────────────────────────────────────────────────
+    //initiate
 
     const openInitiateModal = async () => {
         setError('');
@@ -222,7 +222,7 @@ const StockVerification = () => {
         }
     };
 
-    // ── Print ─────────────────────────────────────────────────────────────
+    //print
 
     const openPrintModal = (row) => {
         setPrintVerification(row);
@@ -315,7 +315,7 @@ const StockVerification = () => {
         }
     };
 
-    // ── Enter Results ─────────────────────────────────────────────────────
+    //enter results
 
     const openScanModal = (row) => {
         setActiveVerification(row);
@@ -350,7 +350,7 @@ const StockVerification = () => {
         }
     };
 
-    // ── Complete ──────────────────────────────────────────────────────────
+    //complete
 
     const handleComplete = async (verificationId) => {
         if (!window.confirm('Mark this verification as complete? This cannot be undone.')) return;
@@ -362,7 +362,7 @@ const StockVerification = () => {
         }
     };
 
-    // ── Report ────────────────────────────────────────────────────────────
+    //report
 
     const handleViewReport = async (verificationId) => {
         try {
@@ -374,7 +374,7 @@ const StockVerification = () => {
         }
     };
 
-    // ── Table columns ─────────────────────────────────────────────────────
+    //table columns
 
     const columns = [
         { header: 'ID', key: 'verificationId' },

@@ -27,7 +27,7 @@ const reportTabs = [
     { key: 'stock', label: 'Stock Verification', icon: PackageSearch },
 ];
 
-// tabs where date filter is not applicable
+//tabs where date filter is not applicable
 const NO_DATE_FILTER = ['holding', 'stock', 'inventory'];
 
 const AdminReports = () => {
@@ -51,7 +51,7 @@ const AdminReports = () => {
     const [callNoFrom, setCallNoFrom] = useState('');
     const [callNoTo, setCallNoTo] = useState('');
 
-    // Stock verification filter: 'all' | 'changed' | 'unchanged'
+    //stock verification filter: 'all' | 'changed' | 'unchanged'
     const [stockFilter, setStockFilter] = useState('all');
 
     useEffect(() => {
@@ -85,7 +85,7 @@ const AdminReports = () => {
         }
     };
 
-    // ─── Date Filter ──────────────────────────────────────────────────────
+    //date filter
     const applyDateFilter = (rows, dateKey) => {
         if (!rows) return rows;
         if (!fromDate && !toDate) return rows;
@@ -117,7 +117,7 @@ const AdminReports = () => {
 
     const filteredData = getFilteredData();
 
-    // ─── Shared ───────────────────────────────────────────────────────────
+    //shared
     const fmt = (d) => d ? new Date(d).toLocaleDateString() : '—';
 
     const monthLabel = fromDate || toDate
@@ -125,7 +125,7 @@ const AdminReports = () => {
         : 'All Time';
 
 
-    // ─── Inventory Data Preparation ───────────────────────────────────────
+    //inventory data preparation
     const getInventoryRows = () => {
         if (!data) return { rows: [], summary: null };
 
@@ -204,7 +204,7 @@ const AdminReports = () => {
     };
 
 
-    // ─── PDF Download ─────────────────────────────────────────────────────
+    //PDF download
     const handleDownloadPDF = () => {
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         const title = reportTabs.find(t => t.key === activeTab)?.label + ' Report';
@@ -305,7 +305,7 @@ const AdminReports = () => {
             doc.setTextColor(0);
             startY += 8;
 
-            // Verifiers
+            //verifiers
             doc.setFontSize(9);
             doc.text('Verifiers:', 14, startY);
             startY += 6;
@@ -325,7 +325,7 @@ const AdminReports = () => {
                 startY += 7;
             });
 
-            // Table first
+            //table first
             autoTable(doc, {
                 startY,
                 head: [['Accession No.', 'Title', 'Call No.', 'Verified By', 'Previous Status', 'Marked Status', 'Changed', ...(stockIncludeRemarks ? ['Remarks'] : [])]],
@@ -351,7 +351,7 @@ const AdminReports = () => {
                 ...tableStyle,
             });
 
-            // Summary AFTER the table
+            //summary after the table
             const finalY = doc.lastAutoTable.finalY + 10;
             [
                 ['Total Records', allDetails.length],
@@ -441,7 +441,7 @@ const AdminReports = () => {
         doc.save(`${title.replace(/\s+/g, '_')}_${monthLabel.replace(/\s+/g, '_')}.pdf`);
     };
 
-    // ─── Excel Download ───────────────────────────────────────────────────
+    //excel download
     const handleDownloadExcel = () => {
         const title = reportTabs.find(t => t.key === activeTab)?.label;
         const d = filteredData;
@@ -491,7 +491,7 @@ const AdminReports = () => {
                 'Email': r.email, 'Due Date': fmt(r.dueDate),
                 'Days Overdue': r.daysOverdue, 'Est. Fine': r.estimatedFine,
             })),
-            // Full report: all entries, not just discrepancies
+            //full report
             stock: () => {
                 const allDetails = [...(d.details || [])].sort((a, b) =>
                     stockSort === 'accNo'
@@ -509,7 +509,7 @@ const AdminReports = () => {
                     ...(stockIncludeRemarks ? { 'Remarks': r.remarks || '' } : {}),
                 }));
 
-                // Summary rows at the bottom
+                //summary rows at the bottom
                 const changedCount = allDetails.filter(r => r.statusChanged).length;
                 rows.push({});
                 rows.push({ 'Accession No.': '— SUMMARY —' });
@@ -549,7 +549,7 @@ const AdminReports = () => {
         XLSX.writeFile(wb, `${title?.replace(/\s+/g, '_')}_${dateLabel.replace(/\s+/g, '_')}.xlsx`);
     };
 
-    // ─── Table Columns ────────────────────────────────────────────────────
+    //table columns
     const circulationColumns = [
         { header: 'Book', key: 'bookTitle' },
         { header: 'Borrower', key: 'userName' },
