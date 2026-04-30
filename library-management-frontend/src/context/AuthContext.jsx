@@ -49,6 +49,12 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
+    const apiPrefix = () => {
+        if (user?.roles?.includes('ADMIN')) return 'admin';
+        if (user?.roles?.includes('LIBRARIAN')) return 'librarian';
+        return 'employee';
+    };
+
     const isAdmin = () => user?.roles?.includes('ADMIN');
     const isLibrarian = () => user?.roles?.includes('LIBRARIAN');
     const isEmployee = () => user?.roles?.includes('EMPLOYEE');
@@ -62,7 +68,8 @@ export const AuthProvider = ({ children }) => {
             logout,
             isAdmin,
             isLibrarian,
-            isEmployee
+            isEmployee,
+            apiPrefix
         }}>
             {!loading && children}
         </AuthContext.Provider>

@@ -2,6 +2,8 @@ package com.cdot.library_management.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "system_accounts")
@@ -23,6 +25,9 @@ public class SystemAccount {
 
     @Column(name = "role", nullable = false, length = 20)
     private String role;
+
+    @OneToMany(mappedBy = "account", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<SystemAccountPermission> permissions = new ArrayList<>();
 
     @Column(name = "email", length = 150)
     private String email;
@@ -76,6 +81,9 @@ public class SystemAccount {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+
+    public List<SystemAccountPermission> getPermissions() { return permissions; }
+    public void setPermissions(List<SystemAccountPermission> permissions) { this.permissions = permissions; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }

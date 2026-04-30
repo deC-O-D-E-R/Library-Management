@@ -54,8 +54,8 @@ const AppRoutes = () => {
             <Route path="/login" element={
                 token ? (
                     user?.roles?.includes('ADMIN') ? <Navigate to="/admin/dashboard" replace /> :
-                    user?.roles?.includes('LIBRARIAN') ? <Navigate to="/librarian/dashboard" replace /> :
-                    <Navigate to="/employee/dashboard" replace />
+                        user?.roles?.includes('LIBRARIAN') ? <Navigate to="/librarian/dashboard" replace /> :
+                            <Navigate to="/employee/dashboard" replace />
                 ) : <Login />
             } />
 
@@ -78,6 +78,9 @@ const AppRoutes = () => {
             <Route path="/librarian/return" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><ReturnBook /></ProtectedRoute>} />
             <Route path="/librarian/circulation" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><Circulation /></ProtectedRoute>} />
             <Route path="/librarian/reservations" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><Reservations /></ProtectedRoute>} />
+            <Route path="/librarian/fines" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><AdminFines /></ProtectedRoute>} />
+            <Route path="/librarian/books" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><AdminBooks /></ProtectedRoute>} />
+            <Route path="/librarian/users" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN']}><AdminUsers /></ProtectedRoute>} />
 
             {/* Employee Routes */}
             <Route path="/employee/dashboard" element={<ProtectedRoute allowedRoles={['ADMIN', 'LIBRARIAN', 'EMPLOYEE']}><EmployeeDashboard /></ProtectedRoute>} />

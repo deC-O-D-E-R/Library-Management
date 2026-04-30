@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheck, Plus, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, Plus, Eye, EyeOff, AlertTriangle, Save } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
@@ -7,18 +7,33 @@ import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import Loader from '../../components/ui/Loader';
 import useAuth from '../../hooks/useAuth';
-import { getAllSystemAccounts, createSystemAccount, deactivateSystemAccount } from '../../api/systemApi';
+import {
+    getAllSystemAccounts, createSystemAccount,
+    deactivateSystemAccount, updateSystemAccountPermissions
+} from '../../api/systemApi';
+
+const ALL_PERMISSIONS = [
+    { key: 'SEARCH_BOOKS', label: 'Search Books', description: 'Can search and view books' },
+    { key: 'ISSUE_RETURN_BOOKS', label: 'Issue & Return Books', description: 'Can issue, return books and view circulation' },
+    { key: 'MANAGE_RESERVATIONS', label: 'Manage Reservations', description: 'Can manage book reservations' },
+    { key: 'MANAGE_FINES', label: 'Manage Fines', description: 'Can manage and collect fines' },
+    { key: 'MANAGE_BOOKS', label: 'Manage Books', description: 'Can add and manage books' },
+    { key: 'MANAGE_USERS', label: 'Manage Users', description: 'Can add and manage users' },
+];
+
+const DEFAULT_PERMISSIONS = ['SEARCH_BOOKS', 'ISSUE_RETURN_BOOKS'];
 
 const emptyForm = (email = '') => ({
     accountName: '',
     username: '',
-    email: email,
+    email,
     role: 'LIBRARIAN',
-    password: ''
+    password: '',
+    permissions: [...DEFAULT_PERMISSIONS]
 });
 
 const SystemUsers = () => {
-    const { auth } = useAuth();
+    const { user } = useAuth(); 
 
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -28,7 +43,12 @@ const SystemUsers = () => {
     const [formError, setFormError] = useState('');
     const [formLoading, setFormLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [form, setForm] = useState(emptyForm(auth?.email || ''));
+    const [form, setForm] = useState(emptyForm(user?.email || ''));
+
+    // permissions editing in details panel
+    const [editingPermissions, setEditingPermissions] = useState([]);
+    const [permSaving, setPermSaving] = useState(false);
+    const [permSuccess, setPermSuccess] = useState('');
 
     useEffect(() => { fetchAccounts(); }, []);
 
@@ -47,6 +67,24 @@ const SystemUsers = () => {
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
         setFormError('');
+    };
+
+    // toggle permission in create form
+    const toggleFormPermission = (key) => {
+        setForm(prev => ({
+            ...prev,
+            permissions: prev.permissions.includes(key)
+                ? prev.permissions.filter(k => k !== key)
+                : [...prev.permissions, key]
+        }));
+    };
+
+    // toggle permission in details panel
+    const toggleEditPermission = (key) => {
+        setEditingPermissions(prev =>
+            prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+        );
+        setPermSuccess('');
     };
 
     const handleCreate = async (e) => {
@@ -69,6 +107,23 @@ const SystemUsers = () => {
         }
     };
 
+    const handleSavePermissions = async () => {
+        setPermSaving(true);
+        setPermSuccess('');
+        try {
+            const res = await updateSystemAccountPermissions(selectedAccount.accountId, editingPermissions);
+            setSelectedAccount(res.data);
+            setAccounts(prev => prev.map(a =>
+                a.accountId === res.data.accountId ? res.data : a
+            ));
+            setPermSuccess('Permissions saved successfully');
+        } catch (err) {
+            alert(err.response?.data || 'Failed to save permissions');
+        } finally {
+            setPermSaving(false);
+        }
+    };
+
     const confirmDeactivate = (account) => {
         setSelectedAccount(account);
         setShowDeactivateModal(true);
@@ -86,14 +141,18 @@ const SystemUsers = () => {
     };
 
     const handleRowClick = (account) => {
-        setSelectedAccount(prev =>
-            prev?.accountId === account.accountId ? null : account
-        );
+        if (selectedAccount?.accountId === account.accountId) {
+            setSelectedAccount(null);
+            return;
+        }
+        setSelectedAccount(account);
+        setEditingPermissions(account.permissions || []);
+        setPermSuccess('');
     };
 
     const closeModal = () => {
         setShowModal(false);
-        setForm(emptyForm(auth?.email || ''));
+        setForm(emptyForm(user?.email || ''));
         setFormError('');
         setShowPassword(false);
     };
@@ -109,14 +168,8 @@ const SystemUsers = () => {
     const columns = [
         { header: 'Username', key: 'username' },
         { header: 'Email', key: 'email' },
-        {
-            header: 'Role',
-            render: (row) => <Badge text={row.role} type="role" />
-        },
-        {
-            header: 'Status',
-            render: (row) => <Badge text={row.isActive ? 'ACTIVE' : 'INACTIVE'} />
-        },
+        { header: 'Role', render: (row) => <Badge text={row.role} type="role" /> },
+        { header: 'Status', render: (row) => <Badge text={row.isActive ? 'ACTIVE' : 'INACTIVE'} /> },
         {
             header: 'Created At',
             render: (row) => new Date(row.createdAt).toLocaleDateString('en-IN', {
@@ -126,8 +179,7 @@ const SystemUsers = () => {
         {
             header: 'Action',
             render: (row) => row.isActive ? (
-                <button
-                    onClick={(e) => { e.stopPropagation(); confirmDeactivate(row); }}
+                <button onClick={(e) => { e.stopPropagation(); confirmDeactivate(row); }}
                     className="text-xs text-danger hover:underline">
                     Deactivate
                 </button>
@@ -147,9 +199,7 @@ const SystemUsers = () => {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-text-primary text-2xl font-bold">System Users</h1>
-                        <p className="text-text-secondary text-sm mt-1">
-                            Manage admin and librarian accounts.
-                        </p>
+                        <p className="text-text-secondary text-sm mt-1">Manage admin and librarian accounts.</p>
                     </div>
                     <button onClick={() => setShowModal(true)}
                         className="flex items-center gap-2 bg-accent text-primary text-sm font-semibold px-4 py-2 rounded-lg hover:bg-amber-400 transition-colors">
@@ -168,25 +218,25 @@ const SystemUsers = () => {
                     />
                 </Card>
 
-                {/* Login Details Panel */}
+                {/* Details Panel */}
                 {selectedAccount && (
-                    <Card title={`Login Details: ${selectedAccount.username}`}>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-1">
+                    <Card title="Login Details">
+                        <div className="flex items-center gap-2 mb-4 pb-4 border-b border-border">
+                            <ShieldCheck size={16} className="text-accent" />
+                            <span className="text-text-secondary text-sm">Viewing account —</span>
+                            <span className="text-emerald-400 font-semibold text-sm">{selectedAccount.username}</span>
+                            <Badge text={selectedAccount.role} type="role" />
+                        </div>
+
+                        {/* Account Info */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                             <div>
                                 <p className="text-text-secondary text-xs uppercase tracking-wider">Account Name</p>
                                 <p className="text-text-primary font-medium mt-1">{selectedAccount.accountName}</p>
                             </div>
                             <div>
-                                <p className="text-text-secondary text-xs uppercase tracking-wider">Username</p>
-                                <p className="text-text-primary font-medium mt-1">{selectedAccount.username}</p>
-                            </div>
-                            <div>
                                 <p className="text-text-secondary text-xs uppercase tracking-wider">Email</p>
                                 <p className="text-text-primary font-medium mt-1">{selectedAccount.email || '—'}</p>
-                            </div>
-                            <div>
-                                <p className="text-text-secondary text-xs uppercase tracking-wider">Role</p>
-                                <div className="mt-1"><Badge text={selectedAccount.role} type="role" /></div>
                             </div>
                             <div>
                                 <p className="text-text-secondary text-xs uppercase tracking-wider">Status</p>
@@ -205,9 +255,55 @@ const SystemUsers = () => {
                                 <p className="text-text-primary font-medium mt-1">{formatDate(selectedAccount.lastLogin)}</p>
                             </div>
                         </div>
+
+                        {/* Permissions Section */}
+                        <div className="border-t border-border pt-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-text-secondary text-xs font-semibold uppercase tracking-wider">
+                                    {selectedAccount.role === 'ADMIN' ? 'Permissions' : 'Librarian Permissions'}
+                                </p>
+                                {selectedAccount.role === 'LIBRARIAN' && (
+                                    <button
+                                        onClick={handleSavePermissions}
+                                        disabled={permSaving}
+                                        className="flex items-center gap-1.5 bg-accent text-primary text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400 transition-colors disabled:opacity-60">
+                                        <Save size={12} />
+                                        {permSaving ? 'Saving...' : 'Save'}
+                                    </button>
+                                )}
+                            </div>
+
+                            {selectedAccount.role === 'ADMIN' ? (
+                                <p className="text-text-secondary text-sm">
+                                    Admin accounts have full access to all features by default.
+                                </p>
+                            ) : (
+                                <>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {ALL_PERMISSIONS.map((perm) => (
+                                            <label key={perm.key}
+                                                className="flex items-start gap-3 bg-sidebar border border-border rounded-lg px-4 py-3 cursor-pointer hover:border-accent/40 transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={editingPermissions.includes(perm.key)}
+                                                    onChange={() => toggleEditPermission(perm.key)}
+                                                    className="mt-0.5 accent-amber-400"
+                                                />
+                                                <div>
+                                                    <p className="text-text-primary text-sm font-medium">{perm.label}</p>
+                                                    <p className="text-text-secondary text-xs mt-0.5">{perm.description}</p>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                    {permSuccess && (
+                                        <p className="text-success text-xs mt-3">{permSuccess}</p>
+                                    )}
+                                </>
+                            )}
+                        </div>
                     </Card>
                 )}
-
             </div>
 
             {/* Create Modal */}
@@ -258,6 +354,30 @@ const SystemUsers = () => {
                         </div>
                     </div>
 
+                    {/* Permissions in create modal — only for librarian */}
+                    {form.role === 'LIBRARIAN' && (
+                        <div className="flex flex-col gap-2">
+                            <label className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Permissions</label>
+                            <div className="flex flex-col gap-2">
+                                {ALL_PERMISSIONS.map((perm) => (
+                                    <label key={perm.key}
+                                        className="flex items-center gap-3 bg-sidebar border border-border rounded-lg px-3 py-2.5 cursor-pointer hover:border-accent/40 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={form.permissions.includes(perm.key)}
+                                            onChange={() => toggleFormPermission(perm.key)}
+                                            className="accent-amber-400"
+                                        />
+                                        <div>
+                                            <p className="text-text-primary text-sm font-medium">{perm.label}</p>
+                                            <p className="text-text-secondary text-xs">{perm.description}</p>
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {formError && (
                         <div className="border border-danger rounded-lg px-4 py-3">
                             <p className="text-danger text-sm">{formError}</p>
@@ -302,7 +422,6 @@ const SystemUsers = () => {
                     </div>
                 </div>
             </Modal>
-
         </Layout>
     );
 };

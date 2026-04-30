@@ -75,6 +75,11 @@ public class BookController {
         return ResponseEntity.ok(bookService.searchBooks(title, author, isbn, callNumber));
     }
 
+    @GetMapping("/categories")
+    public ResponseEntity<?> getAllCategories() {
+        return ResponseEntity.ok(bookService.getAllCategories());
+    }
+
     @GetMapping("/category/{categoryId}")
     public ResponseEntity<List<BookResponseDTO>> getBooksByCategory(
             @PathVariable Integer categoryId) {

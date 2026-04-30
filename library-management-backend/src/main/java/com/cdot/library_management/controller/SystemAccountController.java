@@ -49,5 +49,17 @@ public class SystemAccountController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
+
+    @PatchMapping("/{accountId}/permissions")
+    public ResponseEntity<?> updatePermissions(
+            @PathVariable Integer accountId,
+            @RequestBody List<String> permissionKeys) {
+        try {
+            SystemAccountResponse response = systemAccountService.updatePermissions(accountId, permissionKeys);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 }

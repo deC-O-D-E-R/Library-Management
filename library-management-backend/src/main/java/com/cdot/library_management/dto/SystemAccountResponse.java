@@ -1,6 +1,7 @@
 package com.cdot.library_management.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class SystemAccountResponse {
 
@@ -9,6 +10,7 @@ public class SystemAccountResponse {
     private String username;
     private String email;
     private String role;
+    private List<String> permissions;
     private Boolean isActive;
     private LocalDateTime lastLogin;
     private String createdBy;
@@ -17,7 +19,7 @@ public class SystemAccountResponse {
     public SystemAccountResponse(Integer accountId, String accountName, String username,
                                   String email, String role, Boolean isActive,
                                   String createdBy, LocalDateTime createdAt,
-                                  LocalDateTime lastLogin) {
+                                  LocalDateTime lastLogin, List<String> permissions) {
         this.accountId = accountId;
         this.accountName = accountName;
         this.username = username;
@@ -27,6 +29,7 @@ public class SystemAccountResponse {
         this.lastLogin = lastLogin;
         this.createdBy = createdBy;
         this.createdAt = createdAt;
+        this.permissions = permissions;
     }
 
     public Integer getAccountId() { return accountId; }
@@ -38,4 +41,5 @@ public class SystemAccountResponse {
     public LocalDateTime getLastLogin() { return lastLogin; }
     public String getCreatedBy() { return createdBy; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public List<String> getPermissions() { return permissions; }
 }

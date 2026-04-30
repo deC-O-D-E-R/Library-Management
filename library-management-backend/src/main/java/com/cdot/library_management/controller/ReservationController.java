@@ -1,6 +1,7 @@
 package com.cdot.library_management.controller;
 
 import com.cdot.library_management.dto.ReservationResponseDTO;
+import com.cdot.library_management.service.PermissionService;
 import com.cdot.library_management.service.ReservationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,23 +12,23 @@ import java.util.List;
 public class ReservationController {
 
     private final ReservationService reservationService;
+    private final PermissionService permissionService;
 
-    public ReservationController(ReservationService reservationService) {
+    public ReservationController(ReservationService reservationService,
+                                  PermissionService permissionService) {
         this.reservationService = reservationService;
+        this.permissionService = permissionService;
     }
 
-    //reserve a book
     @PostMapping("/employee/reservations/{bookId}")
     public ResponseEntity<?> reserveBook(@PathVariable Integer bookId) {
         try {
-            ReservationResponseDTO response = reservationService.reserveBook(bookId);
-            return ResponseEntity.status(201).body(response);
+            return ResponseEntity.status(201).body(reservationService.reserveBook(bookId));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    //cancel a reserve book
     @DeleteMapping("/employee/reservations/{reservationId}")
     public ResponseEntity<?> cancelReservation(@PathVariable Integer reservationId) {
         try {
@@ -38,38 +39,44 @@ public class ReservationController {
         }
     }
 
-    //get all your reservations
     @GetMapping("/employee/reservations/my")
     public ResponseEntity<List<ReservationResponseDTO>> getMyReservations() {
         return ResponseEntity.ok(reservationService.getMyReservations());
     }
 
-    //librarian get all pending reservations
     @GetMapping("/librarian/reservations/pending")
-    public ResponseEntity<List<ReservationResponseDTO>> getAllPendingReservations() {
+    public ResponseEntity<?> getAllPendingReservations() {
+        if (!permissionService.hasPermission("MANAGE_RESERVATIONS")) {
+            return ResponseEntity.status(403).build();
+        }
         return ResponseEntity.ok(reservationService.getAllPendingReservations());
     }
 
-    //librarian get all reservations
     @GetMapping("/librarian/reservations")
-    public ResponseEntity<List<ReservationResponseDTO>> getAllReservations() {
+    public ResponseEntity<?> getAllReservations() {
+        if (!permissionService.hasPermission("MANAGE_RESERVATIONS")) {
+            return ResponseEntity.status(403).build();
+        }
         return ResponseEntity.ok(reservationService.getAllReservations());
     }
 
-    //fulfill a reservation
     @PatchMapping("/librarian/reservations/{reservationId}/fulfill")
     public ResponseEntity<?> fulfillReservation(@PathVariable Integer reservationId) {
+        if (!permissionService.hasPermission("MANAGE_RESERVATIONS")) {
+            return ResponseEntity.status(403).body("You do not have permission to manage reservations");
+        }
         try {
-            ReservationResponseDTO response = reservationService.fulfillReservation(reservationId);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(reservationService.fulfillReservation(reservationId));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    //get reserse books
     @GetMapping("/librarian/reservations/book/{bookId}")
-    public ResponseEntity<List<ReservationResponseDTO>> getReservationsByBook(@PathVariable Integer bookId) {
+    public ResponseEntity<?> getReservationsByBook(@PathVariable Integer bookId) {
+        if (!permissionService.hasPermission("MANAGE_RESERVATIONS")) {
+            return ResponseEntity.status(403).build();
+        }
         return ResponseEntity.ok(reservationService.getReservationsByBook(bookId));
     }
 }

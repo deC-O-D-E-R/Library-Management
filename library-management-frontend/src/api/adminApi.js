@@ -1,4 +1,5 @@
 import axiosInstance from './axios';
+import { getApiPrefix } from '../utils/apiPrefix';
 
 //auth
 export const login = (credentials) =>
@@ -15,37 +16,37 @@ export const resetPassword = (staffNumber, otp, newPassword) =>
 
 //users
 export const getAllUsers = () =>
-    axiosInstance.get('/admin/users');
+    axiosInstance.get(`/${getApiPrefix()}/users`);
 
 export const getUserById = (userId) =>
-    axiosInstance.get(`/admin/users/${userId}`);
+    axiosInstance.get(`/${getApiPrefix()}/users/${userId}`);
 
 export const searchUserByStaffNumber = (staffNumber) =>
-    axiosInstance.get(`/admin/users/search/${staffNumber}`);
+    axiosInstance.get(`/${getApiPrefix()}/users/search/${staffNumber}`);
 
 export const getActiveUsers = () =>
-    axiosInstance.get('/admin/users/active');
+    axiosInstance.get(`/${getApiPrefix()}/users/active`);
 
 export const addUser = (data) =>
-    axiosInstance.post('/admin/users', data);
+    axiosInstance.post(`/${getApiPrefix()}/users`, data);
 
 export const editUser = (userId, data) =>
-    axiosInstance.put(`/admin/users/${userId}`, data);
+    axiosInstance.put(`/${getApiPrefix()}/users/${userId}`, data);
 
 export const deactivateUser = (userId) =>
-    axiosInstance.patch(`/admin/users/${userId}/deactivate`);
+    axiosInstance.patch(`/${getApiPrefix()}/users/${userId}/deactivate`);
 
 export const bulkUploadUsers = (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    return axiosInstance.post('/admin/users/bulk-upload', formData, {
+    return axiosInstance.post(`/${getApiPrefix()}/users/bulk-upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     });
 };
 
 //categories
 export const getAllCategories = () =>
-    axiosInstance.get('/admin/categories');
+    axiosInstance.get(`/${getApiPrefix()}/books/categories`);
 
 export const addCategory = (data) =>
     axiosInstance.post('/admin/categories', data);
@@ -55,35 +56,35 @@ export const updateCategory = (id, data) =>
 
 //books
 export const getAllBooks = () =>
-    axiosInstance.get('/admin/books');
+    axiosInstance.get(`/${getApiPrefix()}/books`);
 
 export const getBookById = (bookId) =>
-    axiosInstance.get(`/admin/books/${bookId}`);
+    axiosInstance.get(`/${getApiPrefix()}/books/${bookId}`);
 
 export const searchBooks = (params) =>
-    axiosInstance.get('/admin/books/search', { params });
+    axiosInstance.get(`/${getApiPrefix()}/books/search`, { params });
 
 export const getBooksByCategory = (categoryId) =>
-    axiosInstance.get(`/admin/books/category/${categoryId}`);
+    axiosInstance.get(`/${getApiPrefix()}/books/category/${categoryId}`);
 
 export const addBook = (data) =>
-    axiosInstance.post('/admin/books', data);
+    axiosInstance.post(`/${getApiPrefix()}/books`, data);
 
 export const editBook = (bookId, data) =>
-    axiosInstance.put(`/admin/books/${bookId}`, data);
+    axiosInstance.put(`/${getApiPrefix()}/books/${bookId}`, data);
 
 export const addCopy = (bookId, accessionNumber) =>
-    axiosInstance.post(`/admin/books/${bookId}/copies`, null, {
+    axiosInstance.post(`/${getApiPrefix()}/books/${bookId}/copies`, null, {
         params: { accessionNumber }
     });
 
 export const deleteCopy = (copyId) =>
-    axiosInstance.delete(`/admin/books/copies/${copyId}`);
+    axiosInstance.delete(`/${getApiPrefix()}/books/copies/${copyId}`);
 
 export const bulkUploadBooks = (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    return axiosInstance.post('/admin/books/bulk-upload', formData, {
+    return axiosInstance.post(`/${getApiPrefix()}/books/bulk-upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     });
 };

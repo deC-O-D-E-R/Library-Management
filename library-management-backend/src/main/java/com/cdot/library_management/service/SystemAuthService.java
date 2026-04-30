@@ -21,14 +21,17 @@ public class SystemAuthService {
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final PermissionService permissionService;
 
     public SystemAuthService(SystemAccountRepository systemAccountRepository,
                              JwtUtil jwtUtil,
                              PasswordEncoder passwordEncoder,
+                             PermissionService permissionService,
                              @org.springframework.beans.factory.annotation.Autowired(required = false) EmailService emailService) {
         this.systemAccountRepository = systemAccountRepository;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
+        this.permissionService = permissionService;
         this.emailService = emailService;
     }
 
@@ -87,12 +90,15 @@ public class SystemAuthService {
 
         String token = jwtUtil.generateToken(account.getUsername(), List.of(account.getRole()));
 
+        List<String> permissions = permissionService.getPermissionKeys(account.getAccountId());
+
         return new SystemLoginResponse(
                 token,
                 account.getUsername(),
                 account.getAccountName(),
                 account.getEmail(),
-                account.getRole()
+                account.getRole(),
+                permissions
         );
     }
 

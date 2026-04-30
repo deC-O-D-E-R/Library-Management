@@ -59,7 +59,13 @@ const Login = () => {
         try {
             const res = await systemLogin({ username: form.username, password: form.password });
             const data = res.data;
-            setAuth({ name: data.accountName, username: data.username, email: data.email, roles: [data.role] }, data.token);
+            setAuth({
+                name: data.accountName,
+                username: data.username,
+                email: data.email,
+                roles: [data.role],
+                permissions: data.permissions
+            }, data.token);
             if (data.role === 'ADMIN') navigate('/admin/dashboard');
             else navigate('/librarian/dashboard');
         } catch (err) {

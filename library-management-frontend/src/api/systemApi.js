@@ -22,3 +22,6 @@ export const createSystemAccount = (data) =>
 
 export const deactivateSystemAccount = (accountId) =>
     axiosInstance.patch(`/admin/system-accounts/${accountId}/deactivate`);
+
+export const updateSystemAccountPermissions = (accountId, permissions) =>
+    axiosInstance.patch(`/admin/system-accounts/${accountId}/permissions`, permissions);

@@ -4,19 +4,25 @@ import {
     LayoutDashboard, Users, BookOpen, Tag, BarChart3,
     Settings, BookCheck, RotateCcw, List,
     Banknote, PackageSearch, Search, BookMarked, Receipt,
-    BookmarkCheck, FileDown, ExternalLink, ScrollText, 
-    ShieldCheck  
+    BookmarkCheck, FileDown, ExternalLink, ScrollText,
+    ShieldCheck, Lock
 } from 'lucide-react';
 
-const NavItem = ({ to, icon: Icon, label, external }) => {
+const NavItem = ({ to, icon: Icon, label, external, disabled }) => {
+    if (disabled) {
+        return (
+            <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium border-l-2 border-l-transparent border border-transparent opacity-15 cursor-not-allowed select-none text-text-primary">
+                <Icon size={15} strokeWidth={2} />
+                <span className="flex-1">{label}</span>
+                <Lock size={11} />
+            </div>
+        );
+    }
+
     if (external) {
         return (
-            <a
-                href={to}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 border-l-2 text-text-secondary hover:text-text-primary hover:bg-surface/60 border-l-transparent border border-transparent"
-            >
+            <a href={to} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 border-l-2 text-text-secondary hover:text-text-primary hover:bg-surface/60 border-l-transparent border border-transparent">
                 <Icon size={15} strokeWidth={2} />
                 <span>{label}</span>
             </a>
@@ -24,16 +30,14 @@ const NavItem = ({ to, icon: Icon, label, external }) => {
     }
 
     return (
-        <NavLink
-            to={to}
+        <NavLink to={to}
             className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 border-l-2
                 ${isActive
                     ? 'bg-surface text-accent border-l-accent border border-border/60'
                     : 'text-text-secondary hover:text-text-primary hover:bg-surface/60 border-l-transparent border border-transparent'
                 }`
-            }
-        >
+            }>
             <Icon size={15} strokeWidth={2} />
             <span>{label}</span>
         </NavLink>
@@ -47,7 +51,10 @@ const SectionLabel = ({ children }) => (
 );
 
 const Sidebar = () => {
-    const { isAdmin, isLibrarian } = useAuth();
+    const { isAdmin, isLibrarian, user } = useAuth();
+
+    const permissions = user?.permissions || [];
+    const has = (key) => permissions.includes(key);
 
     const adminLinks = [
         { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -62,12 +69,15 @@ const Sidebar = () => {
     ];
 
     const librarianLinks = [
-        { to: '/librarian/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { to: '/librarian/search', icon: Search, label: 'Search Books' },
-        { to: '/librarian/issue', icon: BookCheck, label: 'Issue Book' },
-        { to: '/librarian/return', icon: RotateCcw, label: 'Return Book' },
-        { to: '/librarian/circulation', icon: List, label: 'Circulation' },
-        { to: '/librarian/reservations', icon: BookmarkCheck, label: 'Reservations' },
+        { to: '/librarian/dashboard', icon: LayoutDashboard, label: 'Dashboard', permission: null },
+        { to: '/librarian/search', icon: Search, label: 'Search Books', permission: 'SEARCH_BOOKS' },
+        { to: '/librarian/issue', icon: BookCheck, label: 'Issue Book', permission: 'ISSUE_RETURN_BOOKS' },
+        { to: '/librarian/return', icon: RotateCcw, label: 'Return Book', permission: 'ISSUE_RETURN_BOOKS' },
+        { to: '/librarian/circulation', icon: List, label: 'Circulation', permission: 'ISSUE_RETURN_BOOKS' },
+        { to: '/librarian/reservations', icon: BookmarkCheck, label: 'Reservations', permission: 'MANAGE_RESERVATIONS' },
+        { to: '/librarian/fines', icon: Banknote, label: 'Fines', permission: 'MANAGE_FINES' },
+        { to: '/librarian/books', icon: BookOpen, label: 'Books', permission: 'MANAGE_BOOKS' },
+        { to: '/librarian/users', icon: Users, label: 'Users', permission: 'MANAGE_USERS' },
     ];
 
     const employeeLinks = [
@@ -78,7 +88,7 @@ const Sidebar = () => {
         { to: '/employee/my-fines', icon: Receipt, label: 'My Fines' },
         { to: 'https://www.google.com', icon: ExternalLink, label: 'Online Books', external: true },
         { to: '/employee/book-request', icon: FileDown, label: 'Book Request Form' },
-        { to: '/employee/rules', icon: ScrollText , label: 'Library Rules' },
+        { to: '/employee/rules', icon: ScrollText, label: 'Library Rules' },
     ];
 
     return (
@@ -91,14 +101,11 @@ const Sidebar = () => {
                         {librarianLinks.map((link, i) => (
                             <NavItem key={`lib-${i}`} {...link} />
                         ))}
-
                         <div className="my-2 border-t border-border" />
-
                         <SectionLabel>Administration</SectionLabel>
                         {adminLinks.map((link, i) => (
                             <NavItem key={`admin-${i}`} {...link} />
                         ))}
-
                     </>
                 )}
 
@@ -106,7 +113,11 @@ const Sidebar = () => {
                     <>
                         <SectionLabel>Navigation</SectionLabel>
                         {librarianLinks.map((link, i) => (
-                            <NavItem key={i} {...link} />
+                            <NavItem
+                                key={i}
+                                {...link}
+                                disabled={link.permission && !has(link.permission)}
+                            />
                         ))}
                     </>
                 )}

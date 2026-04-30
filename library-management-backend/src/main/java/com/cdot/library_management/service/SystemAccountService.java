@@ -6,6 +6,7 @@ import com.cdot.library_management.entity.SystemAccount;
 import com.cdot.library_management.repository.SystemAccountRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,11 +16,14 @@ public class SystemAccountService {
 
     private final SystemAccountRepository systemAccountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PermissionService permissionService;
 
     public SystemAccountService(SystemAccountRepository systemAccountRepository,
-                                 PasswordEncoder passwordEncoder) {
+                                 PasswordEncoder passwordEncoder,
+                                  PermissionService permissionService) {
         this.systemAccountRepository = systemAccountRepository;
         this.passwordEncoder = passwordEncoder;
+        this.permissionService = permissionService;
     }
 
     
@@ -28,6 +32,7 @@ public class SystemAccountService {
         String createdBy = account.getCreatedBy() != null
                 ? account.getCreatedBy().getUsername()
                 : "system";
+        List<String> permissions = permissionService.getPermissionKeys(account.getAccountId());
         return new SystemAccountResponse(
                 account.getAccountId(),
                 account.getAccountName(),
@@ -37,7 +42,8 @@ public class SystemAccountService {
                 account.getIsActive(),
                 createdBy,
                 account.getCreatedAt(),
-                account.getLastLogin()
+                account.getLastLogin(),
+                permissions
         );
     }
 
@@ -76,11 +82,17 @@ public class SystemAccountService {
         account.setIsActive(true);
         account.setCreatedBy(createdBy);
 
-        return toResponse(systemAccountRepository.save(account));
+        SystemAccount saved = systemAccountRepository.save(account);
+
+        // assign permissions
+        if (request.getPermissions() != null && !request.getPermissions().isEmpty()) {
+            permissionService.setPermissions(saved.getAccountId(), request.getPermissions());
+        }
+
+        return toResponse(saved);
     }
 
     //deactivate a system user
-
     public void deactivateAccount(Integer accountId, String requestedByUsername) {
         SystemAccount account = systemAccountRepository.findById(accountId)
                 .orElseThrow(() -> new RuntimeException("Account not found"));
@@ -95,5 +107,18 @@ public class SystemAccountService {
 
         account.setIsActive(false);
         systemAccountRepository.save(account);
+    }
+
+    @Transactional
+    public SystemAccountResponse updatePermissions(Integer accountId, List<String> permissionKeys) {
+        SystemAccount account = systemAccountRepository.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        if ("ADMIN".equals(account.getRole())) {
+            throw new RuntimeException("Admin accounts have all permissions by default");
+        }
+
+        permissionService.setPermissions(accountId, permissionKeys);
+        return toResponse(account);
     }
 }
