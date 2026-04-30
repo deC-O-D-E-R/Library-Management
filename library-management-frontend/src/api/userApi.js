@@ -42,6 +42,9 @@ export const downloadRulesPdf = () =>
 export const downloadBookRequestPdf = () =>
     axiosInstance.get('/employee/files/book-request', { responseType: 'blob' });
 
+export const getPublicConfig = (key) =>
+    axiosInstance.get(`/employee/config/${key}`);
+
 //circulation (librarian)
 export const getLibrarianBookById = (bookId) =>
     axiosInstance.get(`/librarian/circulation/books/${bookId}`);

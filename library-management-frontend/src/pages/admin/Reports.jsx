@@ -48,6 +48,8 @@ const AdminReports = () => {
     const [invSort, setInvSort] = useState('callNo');
     const [stockSort, setStockSort] = useState('callNo');
     const [stockIncludeRemarks, setStockIncludeRemarks] = useState(false);
+    const [callNoFrom, setCallNoFrom] = useState('');
+    const [callNoTo, setCallNoTo] = useState('');
 
     // Stock verification filter: 'all' | 'changed' | 'unchanged'
     const [stockFilter, setStockFilter] = useState('all');
@@ -136,6 +138,15 @@ const AdminReports = () => {
                 const d = new Date(b.receiptDate);
                 if (from && d < from) return false;
                 if (to && d > to) return false;
+                return true;
+            });
+        }
+
+        if (invFilters.callNo && (callNoFrom || callNoTo)) {
+            books = books.filter(b => {
+                const cn = (b.callNumber || '').toLowerCase();
+                if (callNoFrom && cn < callNoFrom.toLowerCase()) return false;
+                if (callNoTo && cn > callNoTo.toLowerCase()) return false;
                 return true;
             });
         }
@@ -595,7 +606,7 @@ const AdminReports = () => {
                     {reportTabs.map((tab) => (
                         <button
                             key={tab.key}
-                            onClick={() => { setActiveTab(tab.key); setData(null); setFromDate(''); setToDate(''); setStockFilter('all'); setStockSort('callNo'); setStockIncludeRemarks(false); }}
+                            onClick={() => { setActiveTab(tab.key); setData(null); setFromDate(''); setToDate(''); setStockFilter('all'); setStockSort('callNo'); setStockIncludeRemarks(false); setCallNoFrom(''); setCallNoTo(''); }}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
                                 ${activeTab === tab.key
                                     ? 'bg-accent text-primary'
@@ -785,6 +796,32 @@ const AdminReports = () => {
                                         ))}
                                     </div>
                                 </div>
+
+                                {invFilters.callNo && (
+                                    <>
+                                        <div className="h-px bg-border" />
+                                        <div className="flex flex-col gap-2">
+                                            <span className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Call Number Range</span>
+                                            <div className="flex items-center gap-3">
+                                                <input
+                                                    type="text"
+                                                    placeholder="From (e.g. 100.1)"
+                                                    value={callNoFrom}
+                                                    onChange={(e) => setCallNoFrom(e.target.value)}
+                                                    className="bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent placeholder:text-text-secondary flex-1"
+                                                />
+                                                <span className="text-text-secondary text-sm">to</span>
+                                                <input
+                                                    type="text"
+                                                    placeholder="To (e.g. 100.8)"
+                                                    value={callNoTo}
+                                                    onChange={(e) => setCallNoTo(e.target.value)}
+                                                    className="bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent placeholder:text-text-secondary flex-1"
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
 
                                 <div className="h-px bg-border" />
 

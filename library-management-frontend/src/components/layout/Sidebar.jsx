@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import {
@@ -7,6 +8,7 @@ import {
     BookmarkCheck, FileDown, ExternalLink, ScrollText,
     ShieldCheck, Lock
 } from 'lucide-react';
+import { getPublicConfig } from '../../api/userApi';
 
 const NavItem = ({ to, icon: Icon, label, external, disabled }) => {
     if (disabled) {
@@ -54,7 +56,14 @@ const Sidebar = () => {
     const { isAdmin, isLibrarian, user } = useAuth();
 
     const permissions = user?.permissions || [];
+    const [onlineBooksUrl, setOnlineBooksUrl] = useState('http://www.cdotb.ernet.in/library/index.html');
     const has = (key) => permissions.includes(key);
+
+    useEffect(() => {
+        getPublicConfig('online_books_url')
+            .then(res => { if (res.data) setOnlineBooksUrl(res.data); })
+            .catch(() => { });
+    }, []);
 
     const adminLinks = [
         { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -86,7 +95,7 @@ const Sidebar = () => {
         { to: '/employee/my-books', icon: BookMarked, label: 'My Books' },
         { to: '/employee/reservations', icon: BookmarkCheck, label: 'My Reservations' },
         { to: '/employee/my-fines', icon: Receipt, label: 'My Fines' },
-        { to: 'http://www.cdotb.ernet.in/library/index.html', icon: ExternalLink, label: 'Online Books', external: true },
+        { to: onlineBooksUrl, icon: ExternalLink, label: 'Online Books', external: true },
         { to: '/employee/book-request', icon: FileDown, label: 'Book Request Form' },
         { to: '/employee/rules', icon: ScrollText, label: 'Library Rules' },
     ];
@@ -97,18 +106,23 @@ const Sidebar = () => {
 
                 {isAdmin() && (
                     <>
-                        {librarianLinks.map((link, i) => (
-                            <NavItem
-                                key={`lib-${i}`}
-                                {...link}
-                                label={link.to === '/librarian/dashboard' ? 'Overview' : link.label}
-                            />
-                        ))}
-                        <div className="my-2 border-t border-border" />
                         <SectionLabel>Administration</SectionLabel>
-                        {adminLinks.map((link, i) => (
-                            <NavItem key={`admin-${i}`} {...link} />
-                        ))}
+                        <NavItem to="/admin/dashboard" icon={LayoutDashboard} label="Dashboard" />
+                        {librarianLinks
+                            .filter(link => ![
+                                '/librarian/dashboard',
+                                '/librarian/books',
+                                '/librarian/users',
+                                '/librarian/fines',
+                            ].includes(link.to))
+                            .map((link, i) => (
+                                <NavItem key={`lib-${i}`} {...link} />
+                            ))}
+                        {adminLinks
+                            .filter(link => link.to !== '/admin/dashboard')
+                            .map((link, i) => (
+                                <NavItem key={`admin-${i}`} {...link} />
+                            ))}
                     </>
                 )}
 

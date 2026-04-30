@@ -176,4 +176,14 @@ public class EmployeeController {
         }
     }
 
+    @GetMapping("/config/{key}")
+    public ResponseEntity<?> getPublicConfig(@PathVariable String key) {
+        try {
+            String value = systemConfigService.getValue(key);
+            return ResponseEntity.ok(value);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 }

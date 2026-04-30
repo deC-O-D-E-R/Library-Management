@@ -30,6 +30,12 @@ const configLabels = {
         label: 'Fine System',
         description: 'Enable or disable automatic fine generation on overdue returns',
         suffix: ''
+    },
+    online_books_url: {
+        label: 'Online Books URL',
+        description: 'External link shown to employees in the sidebar',
+        suffix: '',
+        type: 'text'
     }
 };
 
@@ -169,12 +175,9 @@ const AdminConfig = () => {
                                     <div className="flex items-center gap-3">
                                         <div className="relative flex-1">
                                             <input
-                                                type="number"
+                                                type={meta.type === 'text' ? 'text' : 'number'}
                                                 value={values[config.configKey] || ''}
-                                                onChange={(e) => setValues({
-                                                    ...values,
-                                                    [config.configKey]: e.target.value
-                                                })}
+                                                onChange={(e) => setValues({ ...values, [config.configKey]: e.target.value })}
                                                 className="w-full bg-sidebar border border-border text-text-primary rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent"
                                             />
                                         </div>
