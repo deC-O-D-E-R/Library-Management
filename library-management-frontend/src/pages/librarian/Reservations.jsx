@@ -34,8 +34,8 @@ const Reservations = () => {
                 getAllReservations(),
                 getPendingReservations(),
             ]);
-            setAll(allRes.data);
-            setPending(pendingRes.data);
+            setAll([...allRes.data].sort((a, b) => new Date(b.reservedAt) - new Date(a.reservedAt)));
+            setPending([...pendingRes.data].sort((a, b) => new Date(b.reservedAt) - new Date(a.reservedAt)));
         } catch (err) {
             console.error(err);
         } finally {

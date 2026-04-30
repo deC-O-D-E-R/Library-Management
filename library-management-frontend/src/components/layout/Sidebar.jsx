@@ -86,7 +86,7 @@ const Sidebar = () => {
         { to: '/employee/my-books', icon: BookMarked, label: 'My Books' },
         { to: '/employee/reservations', icon: BookmarkCheck, label: 'My Reservations' },
         { to: '/employee/my-fines', icon: Receipt, label: 'My Fines' },
-        { to: 'https://www.google.com', icon: ExternalLink, label: 'Online Books', external: true },
+        { to: 'http://www.cdotb.ernet.in/library/index.html', icon: ExternalLink, label: 'Online Books', external: true },
         { to: '/employee/book-request', icon: FileDown, label: 'Book Request Form' },
         { to: '/employee/rules', icon: ScrollText, label: 'Library Rules' },
     ];
@@ -97,9 +97,12 @@ const Sidebar = () => {
 
                 {isAdmin() && (
                     <>
-                        <SectionLabel>Librarian</SectionLabel>
                         {librarianLinks.map((link, i) => (
-                            <NavItem key={`lib-${i}`} {...link} />
+                            <NavItem
+                                key={`lib-${i}`}
+                                {...link}
+                                label={link.to === '/librarian/dashboard' ? 'Overview' : link.label}
+                            />
                         ))}
                         <div className="my-2 border-t border-border" />
                         <SectionLabel>Administration</SectionLabel>

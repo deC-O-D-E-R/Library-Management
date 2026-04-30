@@ -41,6 +41,10 @@ const AdminConfig = () => {
     const [saved, setSaved] = useState('');
     const [showToggleConfirm, setShowToggleConfirm] = useState(false);
     const [uploading, setUploading] = useState('');
+    const [selectedFiles, setSelectedFiles] = useState({ rules: null, 'book-request': null });
+    const [confirmUpload, setConfirmUpload] = useState(null);
+    const [uploadSuccess, setUploadSuccess] = useState('');
+
 
     const fetchConfigs = async () => {
         try {
@@ -88,19 +92,26 @@ const AdminConfig = () => {
         }
     };
 
-    const handleUpload = async (type, file) => {
+    const handleFileSelect = (type, file) => {
+        if (!file) return;
+        setSelectedFiles({ rules: null, 'book-request': null, [type]: file });
+        setConfirmUpload(null);
+        setUploadSuccess('');
+    };
+
+    const handleUpload = async () => {
+        const type = confirmUpload;
+        const file = selectedFiles[type];
         if (!file) return;
 
         setUploading(type);
-
+        setConfirmUpload(null);
         try {
-            if (type === 'rules') {
-                await uploadRulesPdf(file);
-            } else if (type === 'book-request') {
-                await uploadBookRequestPdf(file);
-            }
-
-            alert('Uploaded successfully');
+            if (type === 'rules') await uploadRulesPdf(file);
+            else await uploadBookRequestPdf(file);
+            setUploadSuccess(type);
+            setSelectedFiles(prev => ({ ...prev, [type]: null }));
+            setTimeout(() => setUploadSuccess(''), 3000);
         } catch (err) {
             console.error(err);
             alert('Upload failed');
@@ -126,7 +137,9 @@ const AdminConfig = () => {
                 {/* Config Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {configs
-                        .filter(c => c.configKey !== 'fine_system_enabled')
+                        .filter(c => c.configKey !== 'fine_system_enabled'
+                            && c.configKey !== 'rules_pdf_path'
+                            && c.configKey !== 'book_request_pdf_path')
                         .map((config) => {
                             const meta = configLabels[config.configKey] || {
                                 label: config.configKey,
@@ -215,68 +228,63 @@ const AdminConfig = () => {
                 </div>
 
                 {/* PDF Configs */}
+                {/* PDF Configs */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                    {/* Book Request PDF */}
-                    <div className="bg-surface border border-border rounded-xl p-5 flex flex-col gap-4">
-
-                        <div className="flex items-start gap-3">
-                            <div className="w-9 h-9 bg-opacity-40 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <Settings size={20} className="text-accent" />
+                    {[
+                        { type: 'book-request', label: 'Book Request Form PDF', description: 'Upload updated request form (replaces existing file)' },
+                        { type: 'rules', label: 'Library Rules PDF', description: 'Upload updated rules document (replaces existing file)' },
+                    ].map(({ type, label, description }) => (
+                        <div key={type} className="bg-surface border border-border rounded-xl p-5 flex flex-col gap-4">
+                            <div className="flex items-start gap-3">
+                                <div className="w-9 h-9 bg-opacity-40 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <Settings size={20} className="text-accent" />
+                                </div>
+                                <div>
+                                    <p className="text-text-primary font-semibold text-sm">{label}</p>
+                                    <p className="text-text-secondary text-xs mt-0.5">{description}</p>
+                                </div>
                             </div>
 
-                            <div>
-                                <p className="text-text-primary font-semibold text-sm">
-                                    Book Request Form PDF
-                                </p>
-                                <p className="text-text-secondary text-xs mt-0.5">
-                                    Upload updated request form (replaces existing file)
-                                </p>
-                            </div>
+                            <label className="flex items-center gap-3 border border-dashed border-border hover:border-accent/50 rounded-lg px-4 py-3 cursor-pointer transition-colors">
+                                <input
+                                    type="file"
+                                    accept="application/pdf"
+                                    className="hidden"
+                                    onChange={(e) => handleFileSelect(type, e.target.files[0])}
+                                />
+                                <span className="text-xs text-text-secondary flex-1 truncate">
+                                    {selectedFiles[type] ? selectedFiles[type].name : 'Choose a PDF file...'}
+                                </span>
+                                <span className="text-xs text-accent font-semibold shrink-0">Browse</span>
+                            </label>
+
+                            {selectedFiles[type] && confirmUpload !== type && (
+                                <Button size="sm" onClick={() => setConfirmUpload(type)}>
+                                    <Save size={14} /> Upload
+                                </Button>
+                            )}
+
+                            {confirmUpload === type && (
+                                <div className="border border-border rounded-lg px-4 py-3 flex flex-col gap-3">
+                                    <p className="text-text-secondary text-xs">
+                                        Replace the existing <span className="text-text-primary font-medium">{label}</span> with <span className="text-text-primary font-medium">{selectedFiles[type]?.name}</span>?
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <Button size="sm" onClick={handleUpload} disabled={uploading === type}>
+                                            {uploading === type ? 'Uploading...' : 'Confirm'}
+                                        </Button>
+                                        <Button size="sm" variant="secondary" onClick={() => { setConfirmUpload(null); setSelectedFiles(prev => ({ ...prev, [type]: null })); }}>
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {uploadSuccess === type && (
+                                <p className="text-success text-xs">Uploaded successfully!</p>
+                            )}
                         </div>
-
-                        <input
-                            type="file"
-                            accept="application/pdf"
-                            onChange={(e) => handleUpload('book-request', e.target.files[0])}
-                            className="text-sm text-text-secondary"
-                        />
-
-                        {uploading === 'book-request' && (
-                            <p className="text-xs text-accent">Uploading...</p>
-                        )}
-                    </div>
-
-                    {/* Rules PDF */}
-                    <div className="bg-surface border border-border rounded-xl p-5 flex flex-col gap-4">
-
-                        <div className="flex items-start gap-3">
-                            <div className="w-9 h-9 bg-opacity-40 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <Settings size={20} className="text-accent" />
-                            </div>
-
-                            <div>
-                                <p className="text-text-primary font-semibold text-sm">
-                                    Library Rules PDF
-                                </p>
-                                <p className="text-text-secondary text-xs mt-0.5">
-                                    Upload updated rules document (replaces existing file)
-                                </p>
-                            </div>
-                        </div>
-
-                        <input
-                            type="file"
-                            accept="application/pdf"
-                            onChange={(e) => handleUpload('rules', e.target.files[0])}
-                            className="text-sm text-text-secondary"
-                        />
-
-                        {uploading === 'rules' && (
-                            <p className="text-xs text-accent">Uploading...</p>
-                        )}
-                    </div>
-
+                    ))}
                 </div>
 
                 {/* Confirmation Dialog */}

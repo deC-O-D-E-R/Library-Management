@@ -41,8 +41,8 @@ const Fines = () => {
                 getPendingFines(),
                 isFineSystemEnabled(),
             ]);
-            setAll(allRes.data);
-            setPending(pendingRes.data);
+            setAll([...allRes.data].sort((a, b) => new Date(b.issueDate) - new Date(a.issueDate)));
+            setPending([...pendingRes.data].sort((a, b) => new Date(b.issueDate) - new Date(a.issueDate)));
             setFineSystemEnabled(fineConfigRes.data);
         } catch (err) {
             console.error(err);

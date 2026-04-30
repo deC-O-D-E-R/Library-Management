@@ -41,9 +41,9 @@ const Circulation = () => {
                     getIssuedCirculations(),
                     getOverdueCirculations(),
                 ]);
-                setAll(allRes.data);
-                setIssued(issuedRes.data);
-                setOverdue(overdueRes.data);
+                setAll([...allRes.data].sort((a, b) => new Date(b.issueDate) - new Date(a.issueDate)));
+                setIssued([...issuedRes.data].sort((a, b) => new Date(b.issueDate) - new Date(a.issueDate)));
+                setOverdue([...overdueRes.data].sort((a, b) => new Date(b.issueDate) - new Date(a.issueDate)));
             } catch (err) {
                 console.error(err);
             } finally {
