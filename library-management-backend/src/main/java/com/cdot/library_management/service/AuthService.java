@@ -2,11 +2,14 @@ package com.cdot.library_management.service;
 
 import com.cdot.library_management.dto.LoginRequest;
 import com.cdot.library_management.dto.LoginResponse;
+import com.cdot.library_management.dto.SystemLoginResponse;
 import com.cdot.library_management.service.EmailService;
 import com.cdot.library_management.entity.User;
 import com.cdot.library_management.entity.UserRole;
+import com.cdot.library_management.entity.SystemAccount;
 import com.cdot.library_management.repository.UserRepository;
 import com.cdot.library_management.repository.UserRoleRepository;
+import com.cdot.library_management.repository.SystemAccountRepository;
 import com.cdot.library_management.security.JwtUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
 
 @Service
 public class AuthService {
@@ -26,17 +30,23 @@ public class AuthService {
     private final UserRoleRepository userRoleRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final SystemAccountRepository systemAccountRepository;
+    private final PermissionService permissionService;
     private final EmailService emailService;
 
     public AuthService(UserRepository userRepository,
                        UserRoleRepository userRoleRepository,
                        JwtUtil jwtUtil,
                        PasswordEncoder passwordEncoder,
+                       SystemAccountRepository systemAccountRepository,
+                       PermissionService permissionService,
                        @Autowired(required = false) EmailService emailService) {
         this.userRepository = userRepository;
         this.userRoleRepository = userRoleRepository;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
+        this.systemAccountRepository = systemAccountRepository;
+        this.permissionService = permissionService;
         this.emailService = emailService;
     }
 
@@ -100,6 +110,70 @@ public class AuthService {
         String token = jwtUtil.generateToken(user.getStaffNumber(), roles);
 
         return new LoginResponse(token, user.getStaffNumber(), user.getName(), user.getEmail(), roles);
+    }
+
+    public Object unifiedLogin(String username, String password) {
+        //try system account first
+        Optional<SystemAccount> systemAccount = systemAccountRepository.findByUsername(username);
+        if (systemAccount.isPresent()) {
+            SystemAccount account = systemAccount.get();
+
+            if (!account.getIsActive()) {
+                throw new RuntimeException("This account has been deactivated. Please contact admin.");
+            }
+
+            checkRateLimit(username);
+
+            if (!passwordEncoder.matches(password, account.getPasswordHash())) {
+                recordFailedAttempt(username);
+                throw new RuntimeException("Invalid username or password");
+            }
+
+            clearAttempts(username);
+            account.setLastLogin(LocalDateTime.now());
+            systemAccountRepository.save(account);
+
+            List<String> permissions = permissionService.getPermissionKeys(account.getAccountId());
+            String token = jwtUtil.generateToken(account.getUsername(), List.of(account.getRole()));
+
+            return new SystemLoginResponse(
+                    token,
+                    account.getUsername(),
+                    account.getAccountName(),
+                    account.getEmail(),
+                    account.getRole(),
+                    permissions
+            );
+        }
+
+        //fall back to employee
+        Optional<User> userOpt = userRepository.findByStaffNumber(username);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+
+            if (!user.getIsActive()) {
+                throw new RuntimeException("Your account has been deactivated. Please contact admin.");
+            }
+
+            checkRateLimit(username);
+
+            if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+                recordFailedAttempt(username);
+                throw new RuntimeException("Invalid username or password");
+            }
+
+            clearAttempts(username);
+
+            List<UserRole> userRoles = userRoleRepository.findByUser_UserId(user.getUserId());
+            List<String> roles = userRoles.stream()
+                    .map(ur -> ur.getRole().getRoleName())
+                    .collect(Collectors.toList());
+
+            String token = jwtUtil.generateToken(user.getStaffNumber(), roles);
+            return new LoginResponse(token, user.getStaffNumber(), user.getName(), user.getEmail(), roles);
+        }
+
+        throw new RuntimeException("Invalid username or password");
     }
 
     //forgot password

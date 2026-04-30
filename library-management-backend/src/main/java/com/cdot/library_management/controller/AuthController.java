@@ -29,6 +29,20 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/unified-login")
+    public ResponseEntity<?> unifiedLogin(@RequestBody LoginRequest request) {
+        try {
+            Object response = authService.unifiedLogin(
+                request.getStaffNumber(), request.getPassword());
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("temporarily locked")) {
+                return ResponseEntity.status(423).body(e.getMessage());
+            }
+            return ResponseEntity.status(401).body(e.getMessage());
+        }
+    }
+
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestParam String staffNumber) {
         try {
