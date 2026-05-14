@@ -55,7 +55,9 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of(
-            "http://localhost:3000", "http://192.168.48.119:3000"
+            "http://localhost:3000",
+            "http://192.168.48.235:3000",
+            "https://v-libmgmt.cdot.in"
         ));
 
         configuration.setAllowedMethods(List.of(

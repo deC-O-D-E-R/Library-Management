@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import useAuth from './hooks/useAuth';
 
@@ -99,11 +99,11 @@ const AppRoutes = () => {
 
 const App = () => {
     return (
-        <BrowserRouter>
+        <HashRouter>
             <AuthProvider>
                 <AppRoutes />
             </AuthProvider>
-        </BrowserRouter>
+        </HashRouter>
     );
 };
 

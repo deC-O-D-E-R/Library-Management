@@ -142,9 +142,15 @@ const AdminUsers = () => {
         { header: 'Name', key: 'name' },
         { header: 'Staff No.', key: 'staffNumber' },
         { header: 'Designation', key: 'designation' },
-        { header: 'Email', key: 'email' },
+        {
+            header: 'Email',
+            render: (row) => (
+                <div className="max-w-[200px] truncate">
+                    {row.email}
+                </div>
+            )
+        },
         { header: 'Joined', render: (row) => formatDate(row.dateOfJoining) },
-        { header: 'Role', render: (row) => row.roles?.map((r, i) => <Badge key={i} text={r} type="role" />) },
         { header: 'Status', render: (row) => <Badge text={row.isActive ? 'active' : 'inactive'} /> },
         {
             header: 'Actions',
@@ -259,7 +265,7 @@ const AdminUsers = () => {
                 {!bulkResult ? (
                     <div className="flex flex-col gap-4">
                         <p className="text-text-secondary text-sm">
-                            Upload a CSV or Excel file with columns: name, staffNumber, designation, email, dateOfJoining, 
+                            Upload a CSV or Excel file with columns: name, staffNumber, designation, email, dateOfJoining,
                             dateOfSuperannuation, dateOfResignation, roles (default password = staffNumber)
                         </p>
 

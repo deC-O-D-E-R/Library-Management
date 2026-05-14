@@ -10,8 +10,9 @@ const isTokenExpired = (token) => {
 };
 
 const axiosInstance = axios.create({
-    // baseURL: 'http://localhost:8080',
-    baseURL: 'http://192.168.48.119:8080',
+    baseURL: 'http://localhost:8080',
+    // baseURL: 'https://v-libmgmt.cdot.in',
+    // baseURL: 'http://192.168.48.235:8080',
 
     headers: {
         'Content-Type': 'application/json',
@@ -26,7 +27,7 @@ axiosInstance.interceptors.request.use(
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 if (window.location.pathname !== '/login') {
-                    window.location.href = '/login';
+                    window.location.href = '/#/login';
                 }
                 return Promise.reject(new Error('Token expired'));
             }
@@ -44,7 +45,7 @@ axiosInstance.interceptors.response.use(
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
+                window.location.href = '/#/login';
             }
         }
         return Promise.reject(error);
